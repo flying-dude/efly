@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=TigerVNC Viewer
+Comment=Connect to VNC server and display remote desktop
+Exec=/usr/bin/vncviewer
+Icon=tigervnc
+Path=
+Terminal=false
+StartupNotify=false
