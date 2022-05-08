@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Installation Guide
+Comment=Open the Arch Linux installation guide in the browser.
+Exec=konqueror https://wiki.archlinux.org/title/Installation_guide
+Icon=archlinux-logo
+Path=
+Terminal=false
+StartupNotify=false

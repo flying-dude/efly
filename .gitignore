@@ -1,0 +1,4 @@
+# exclude archiso output
+/work
+/out
+
