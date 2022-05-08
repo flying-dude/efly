@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Exec=konqueror
+Icon=konqueror
+X-DocPath=konqueror/index.html
+Name=Konqueror
+GenericName=Web Browser
+Categories=Qt;KDE;Network;WebBrowser;
+X-XFCE-Source=file:///usr/share/applications/konqbrowser.desktop

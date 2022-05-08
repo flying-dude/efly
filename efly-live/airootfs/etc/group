@@ -1,0 +1,13 @@
+root:x:0:root
+efly:x:1000:efly
+
+adm:x:1:efly
+ftp:x:2:efly
+games:x:3:efly
+http:x:4:efly
+log:x:5:efly
+rfkill:x:6:efly
+sys:x:7:efly
+systemd-journal:x:8:efly
+wheel:x:9:efly
+uucp:x:10:efly
