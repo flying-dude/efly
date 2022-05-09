@@ -3,6 +3,7 @@ Create a graphical live medium suitable for installing Arch Linux or as a rescue
 ```
 sudo pacman -S archiso
 git clone https://github.com/flying-dude/efly
+cd efly
 sudo mkarchiso -v efly-live
 run_archiso -i out/efly-linux-2022.05.08-x86_64.iso
 ```
