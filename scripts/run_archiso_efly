@@ -1,0 +1,242 @@
+#!/usr/bin/env bash
+
+# modified "run_archiso.sh" from archiso project.
+# upstream: https://gitlab.archlinux.org/archlinux/archiso/-/blob/master/scripts/run_archiso.sh
+
+#
+# Copyright (C) 2020 David Runge <dvzrv@archlinux.org>
+# Copyright (C) 2022 efly Project
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# A simple script to run an archiso image using qemu. The image can be booted
+# using BIOS or UEFI.
+#
+# Requirements:
+# - qemu
+# - edk2-ovmf (when UEFI booting)
+
+set -eu
+
+# Set application name from the script's file name
+app_name="${0##*/}"
+
+print_help() {
+    local usagetext
+    IFS='' read -r -d '' usagetext <<EOF || true
+Usage:
+    ${app_name} [options] <image> -- [qemu-options]
+
+Options:
+    --accessibility -a    set accessibility support using brltty
+    --bios -b             set boot type to 'BIOS' (default)
+    --hd -d               set image type to hard disk instead of optical disc
+    --help -h             print help
+    --secure-boot -s      use Secure Boot (only relevant when using UEFI)
+    --uefi -u             set boot type to 'UEFI'
+    --vnc -v              use VNC display (instead of default SDL)
+    --cdrom -c <image>    attach an additional optical disc image (e.g. for cloud-init)
+
+    --disable-kvm         run qemu with kvm disabled
+    --debug               print extra info for debugging purposes
+
+Examples:
+    Run an image using UEFI:
+    $ ${app_name} --uefi archiso-2020.05.23-x86_64.iso
+
+    Use a raw disk image as virtual hard drive:
+    $ qemu-img create myimage.img 10G
+    $ ${app_name} archiso-2020.05.23-x86_64.iso -- -drive format=raw,file=myimage.img
+
+    Share a folder with qemu:
+    $ ${app_name} archiso-2020.05.23-x86_64.iso -- -virtfs local,path=/path/to/share,mount_tag=host0,security_model=passthrough,id=host0
+    Mount shared folder inside qemu:
+    $ mkdir virtfs; sudo mount -t 9p -o trans=virtio host0 virtfs/
+EOF
+    printf '%s' "${usagetext}"
+}
+
+cleanup_working_dir() {
+    if [[ -d "${working_dir}" ]]; then
+        rm -rf -- "${working_dir}"
+    fi
+}
+
+copy_ovmf_vars() {
+    if [[ ! -f '/usr/share/edk2-ovmf/x64/OVMF_VARS.fd' ]]; then
+        printf 'ERROR: %s\n' "OVMF_VARS.fd not found. Install edk2-ovmf."
+        exit 1
+    fi
+    cp -av -- '/usr/share/edk2-ovmf/x64/OVMF_VARS.fd' "${working_dir}/"
+}
+
+check_image() {
+    if [[ -z "$image" ]]; then
+        printf 'ERROR: %s\n' "Image name can not be empty."
+        exit 1
+    fi
+    if [[ ! -f "$image" ]]; then
+        printf 'ERROR: %s\n' "Image file (${image}) does not exist."
+        exit 1
+    fi
+}
+
+run_image() {
+    if [[ "$boot_type" == 'uefi' ]]; then
+        copy_ovmf_vars
+        if [[ "${secure_boot}" == 'on' ]]; then
+            printf '%s\n' 'Using Secure Boot'
+            local ovmf_code='/usr/share/edk2-ovmf/x64/OVMF_CODE.secboot.fd'
+        else
+            local ovmf_code='/usr/share/edk2-ovmf/x64/OVMF_CODE.fd'
+        fi
+        qemu_options+=(
+            '-drive' "if=pflash,format=raw,unit=0,file=${ovmf_code},read-only=on"
+            '-drive' "if=pflash,format=raw,unit=1,file=${working_dir}/OVMF_VARS.fd"
+            '-global' "driver=cfi.pflash01,property=secure,value=${secure_boot}"
+        )
+    fi
+
+    if [[ "${accessibility}" == 'on' ]]; then
+        qemu_options+=(
+            '-chardev' 'braille,id=brltty'
+            '-device' 'usb-braille,id=usbbrl,chardev=brltty'
+        )
+    fi
+
+    if [[ -n "${oddimage}" ]]; then
+        qemu_options+=(
+            '-device' 'scsi-cd,bus=scsi0.0,drive=cdrom1'
+            '-drive' "id=cdrom1,if=none,format=raw,media=cdrom,read-only=on,file=${oddimage}"
+        )
+    fi
+
+    if [[ $enable_kvm == 'yes' ]]; then
+        qemu_options+=(
+            '-machine' 'type=q35,smm=on,accel=kvm,usb=on,pcspk-audiodev=snd0'
+            '-enable-kvm'
+        )
+    else
+        qemu_options+=('-machine' 'type=q35,smm=on,usb=on,pcspk-audiodev=snd0')
+    fi
+
+    qemu-system-x86_64 \
+        -boot order=d,menu=on,reboot-timeout=5000 \
+        -m "size=3072,slots=0,maxmem=$((3072*1024*1024))" \
+        -k en-us \
+        -name archiso,process=archiso_0 \
+        -device virtio-scsi-pci,id=scsi0 \
+        -device "scsi-${mediatype%rom},bus=scsi0.0,drive=${mediatype}0" \
+        -drive "id=${mediatype}0,if=none,format=raw,media=${mediatype/hd/disk},read-only=on,file=${image}" \
+        -display "${display}" \
+        -vga virtio \
+        -audiodev pa,id=snd0 \
+        -device ich9-intel-hda \
+        -device hda-output,audiodev=snd0 \
+        -device virtio-net-pci,romfile=,netdev=net0 -netdev user,id=net0,hostfwd=tcp::60022-:22 \
+        -global ICH9-LPC.disable_s3=1 \
+        "${qemu_options[@]}" \
+        -serial stdio \
+        -no-reboot
+}
+
+image=''
+oddimage=''
+accessibility=''
+boot_type='bios'
+mediatype='cdrom'
+secure_boot='off'
+display='sdl'
+enable_kvm='yes'
+qemu_options=()
+working_dir="$(mktemp -dt run_archiso.XXXXXXXXXX)"
+trap cleanup_working_dir EXIT
+
+if (( ${#@} == 0 )); then
+    print_help
+    exit 1
+fi
+
+# parse command-line arguments
+while (( ${#@} > 0 )); do
+    # if requested, print help and exit
+    if [[ $1 == '--help' ]] || [[ $1 == '-h' ]]; then
+            print_help
+            exit 0
+    fi
+
+    # the last remaining argument will be the image path
+    if (( ${#@} == 1 )); then
+        image="$1"
+        shift
+        break # exit the while loop
+    fi
+
+    # the '--' serves as separator when passing qemu arguments, which follow after the image path
+    if [[ $2 == '--' ]]; then
+        image="$1"
+        shift 2
+        break # exit the while loop
+    fi
+
+    # parse options
+    case "$1" in
+        -a|--accessibility)
+            accessibility='on'
+            shift
+            ;;
+        -b|--bios)
+            boot_type='bios'
+            shift
+            ;;
+        -c|--cdrom)
+            oddimage="$2"
+            shift 2
+            ;;
+        -d|--hd)
+            mediatype='hd'
+            shift
+            ;;
+        -i|--image)
+            # the "--image" flag is obsolete but still supported for backwards compatibility
+            image="$2"
+            shift 2
+            ;;
+        -u|--uefi)
+            boot_type='uefi'
+            shift
+            ;;
+        -s|--secure-boot)
+            secure_boot='on'
+            shift
+            ;;
+        -v|--vnc)
+            display='none'
+            qemu_options+=(-vnc 'vnc=0.0.0.0:0,vnc=[::]:0')
+            shift
+            ;;
+        --debug)
+            set -x
+            shift
+            ;;
+        --disable-kvm)
+            enable_kvm='no'
+            shift
+            ;;
+        --)
+            # remaining arguments after "--" are passed to qemu
+            shift # consume "--"
+            if (( ${#@} > 0 )); then
+                qemu_options+=($*)
+            fi
+            break # exit the while loop
+            ;;
+        *)
+            echo "Error: Unknown option '$1'. Try '${app_name} -h'."
+            exit 1
+            ;;
+    esac
+done
+
+check_image
+run_image
