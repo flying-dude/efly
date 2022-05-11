@@ -20,9 +20,12 @@ emacs
 # cli applications
 htop
 
-# gui applications
+# kde packages
 konqueror
 okular
+breeze
+
+# misc gui applications
 geany
 gparted
 tigervnc
