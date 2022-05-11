@@ -5,31 +5,38 @@
 row=0
 col=0
 
-[/home/efly/Desktop/TigerVNC Viewer.desktop]
-row=0
-col=3
-
-[/home/efly/Desktop/Installation Guide.desktop]
-row=2
-col=4
-
 [/home/efly/Desktop/GParted.desktop]
 row=0
-col=1
-
-[/home/efly/Desktop/GVim.desktop]
-row=1
-col=0
-
-[/home/efly/Desktop/Geany.desktop]
-row=1
-col=2
-
-[/home/efly/Desktop/Emacs.desktop]
-row=1
 col=1
 
 [/]
 row=0
 col=2
 
+[/home/efly/Desktop/TigerVNC Viewer.desktop]
+row=0
+col=3
+
+[/home/efly/Desktop/GVim.desktop]
+row=1
+col=0
+
+[/home/efly/Desktop/Emacs.desktop]
+row=1
+col=1
+
+[/home/efly/Desktop/Geany.desktop]
+row=1
+col=2
+
+[/home/efly/Desktop/Installation Guide.desktop]
+row=2
+col=4
+
+[/home/efly/Desktop/Chromium.desktop]
+row=3
+col=0
+
+[/home/efly/Desktop/NetSurf Web Browser.desktop]
+row=4
+col=0

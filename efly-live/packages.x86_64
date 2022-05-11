@@ -20,10 +20,9 @@ emacs
 # cli applications
 htop
 
-# kde packages
-konqueror
-okular
-breeze
+# web browsing
+chromium
+netsurf
 
 # misc gui applications
 geany

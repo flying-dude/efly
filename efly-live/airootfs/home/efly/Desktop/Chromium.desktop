@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Chromium
+Comment=Access the Internet
+Exec=/usr/bin/chromium %U
+Icon=chromium
+Path=
+Terminal=false
+StartupNotify=true
