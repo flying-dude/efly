@@ -136,8 +136,7 @@ run_image() {
         -device virtio-net-pci,romfile=,netdev=net0 -netdev user,id=net0,hostfwd=tcp::60022-:22 \
         -global ICH9-LPC.disable_s3=1 \
         "${qemu_options[@]}" \
-        -serial stdio \
-        -no-reboot
+        -serial stdio
 }
 
 image=''
