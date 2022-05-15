@@ -1,4 +1,4 @@
-# exclude archiso output
+# exclude mkarchiso output
 /work
 /out
 
