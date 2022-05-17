@@ -164,20 +164,6 @@ while (( ${#@} > 0 )); do
             exit 0
     fi
 
-    # the last remaining argument will be the image path
-    if (( ${#@} == 1 )); then
-        image="$1"
-        shift
-        break # exit the while loop
-    fi
-
-    # the '--' serves as separator when passing qemu arguments, which follow after the image path
-    if [[ $2 == '--' ]]; then
-        image="$1"
-        shift 2
-        break # exit the while loop
-    fi
-
     # parse options
     case "$1" in
         -a|--accessibility)
@@ -231,7 +217,15 @@ while (( ${#@} > 0 )); do
             break # exit the while loop
             ;;
         *)
-            echo "Error: Unknown option '$1'. Try '${app_name} -h'."
+            # if image was not provided previously, we assume it is the next argument
+            if [[ -z "$image" ]]; then
+                image="$1"
+                shift
+                continue
+            fi
+
+            echo "Using image file '$image'."
+            echo "Error: Unexpected option '$1'. Try '${app_name} --help'."
             exit 1
             ;;
     esac
