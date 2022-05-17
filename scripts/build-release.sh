@@ -39,7 +39,7 @@ chroot image /bin/bash -c "sed -i 's/^#Server/Server/' /etc/pacman.d/mirrorlist"
 chroot image /bin/bash -c "sed -i 's/^CheckSpace/#CheckSpace/' /etc/pacman.conf"
 
 # install the "archiso" package
-chroot image /bin/bash -c "pacman --sync --refresh --refresh"
+chroot image /bin/bash -c "pacman --sync --refresh --refresh --sysupgrade --sysupgrade --noconfirm"
 chroot image /bin/bash -c "pacman --sync --noconfirm archiso"
 
 # create the actual build output. this is a bootable iso file located inside folder "image/out/"
