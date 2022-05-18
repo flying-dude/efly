@@ -28,14 +28,15 @@ Usage:
     ${app_name} [options] <image> -- [qemu-options]
 
 Options:
+    --help -h             print help
+
     --accessibility -a    set accessibility support using brltty
     --bios -b             set boot type to 'BIOS' (default)
+    --cdrom -c <image>    attach an additional optical disc image (e.g. for cloud-init)
     --hd -d               set image type to hard disk instead of optical disc
-    --help -h             print help
     --secure-boot -s      use Secure Boot (only relevant when using UEFI)
     --uefi -u             set boot type to 'UEFI'
     --vnc -v              use VNC display (instead of default SDL)
-    --cdrom -c <image>    attach an additional optical disc image (e.g. for cloud-init)
 
     --disable-kvm         run qemu with kvm disabled
     --debug               print extra info for debugging purposes
@@ -120,9 +121,13 @@ run_image() {
         qemu_options+=('-machine' 'type=q35,smm=on,usb=on,pcspk-audiodev=snd0')
     fi
 
+    # use half of system memory for the VM
+    memory=$(grep MemTotal /proc/meminfo | awk '{print $2}') # total system memory in KB
+    memory="$(($memory / 2))K"
+
     qemu-system-x86_64 \
         -boot order=d,menu=on,reboot-timeout=5000 \
-        -m "size=3072,slots=0,maxmem=$((3072*1024*1024))" \
+        -m ${memory} \
         -k en-us \
         -name archiso,process=archiso_0 \
         -device virtio-scsi-pci,id=scsi0 \
@@ -135,8 +140,8 @@ run_image() {
         -device hda-output,audiodev=snd0 \
         -device virtio-net-pci,romfile=,netdev=net0 -netdev user,id=net0,hostfwd=tcp::60022-:22 \
         -global ICH9-LPC.disable_s3=1 \
-        "${qemu_options[@]}" \
-        -serial stdio
+        -serial stdio \
+        "${qemu_options[@]}"
 }
 
 image=''
