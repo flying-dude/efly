@@ -43,8 +43,8 @@ chroot image /bin/bash -c "pacman --sync --refresh --refresh --sysupgrade --sysu
 chroot image /bin/bash -c "pacman --sync --noconfirm archiso"
 
 # create the actual build output. this is a bootable iso file located inside folder "image/out/"
-cp --recursive efly-live/ image/
-chroot image /bin/bash -c "mkarchiso -v /efly-live" # image/out/efly-linux-2022.05.13-x86_64.iso
+cp --recursive iso/ image/
+chroot image /bin/bash -c "mkarchiso -v /iso" # image/out/efly-live-2022.05.13-x86_64.iso
 
 mv image/out/*.iso efly-live.iso
 b2sum efly-live.iso > efly-live.iso.b2sum
