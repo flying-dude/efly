@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2034
 
-iso_name="efly-linux"
+iso_name="efly-live"
 iso_label="EFLY_$(date +%Y%m)"
 iso_publisher="Efly Linux <https://github.com/flying-dude/efly>"
 iso_application="Efly Live Medium"
