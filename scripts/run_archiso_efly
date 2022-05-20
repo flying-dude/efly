@@ -40,6 +40,7 @@ Options:
 
     --disable-kvm         run qemu with kvm disabled
     --debug               print extra info for debugging purposes
+    --offline             disable networking access
 
 Examples:
     Run an image using UEFI:
@@ -121,6 +122,16 @@ run_image() {
         qemu_options+=('-machine' 'type=q35,smm=on,usb=on,pcspk-audiodev=snd0')
     fi
 
+    # check whether networking should be enabled inside the guest system. and change qemu flags accordingly.
+    # 05/2018 "QEMU's new -nic command line option" https://www.qemu.org/2018/05/31/nic-parameter/
+    if [[ $online == 'no' ]]; then
+        # qemu has networking enabled by default. the flag below will disable networking inside the guest system.
+        qemu_options+=('-nic' 'user,restrict=on')
+    else
+        # the flag below would override offline mode and reactivate networking. therefore inserting only in online mode.
+        qemu_options+=('-device' 'virtio-net-pci,romfile=,netdev=net0')
+    fi
+
     # use half of system memory for the VM
     memory=$(grep MemTotal /proc/meminfo | awk '{print $2}') # total system memory in KB
     memory="$(($memory / 2))K"
@@ -138,10 +149,11 @@ run_image() {
         -audiodev pa,id=snd0 \
         -device ich9-intel-hda \
         -device hda-output,audiodev=snd0 \
-        -device virtio-net-pci,romfile=,netdev=net0 -netdev user,id=net0,hostfwd=tcp::60022-:22 \
+        -netdev user,id=net0,hostfwd=tcp::60022-:22 \
         -global ICH9-LPC.disable_s3=1 \
         -serial stdio \
-        "${qemu_options[@]}"
+        "${qemu_options[@]}" \
+        "${qemu_extra_options[@]}"
 }
 
 image=''
@@ -152,7 +164,9 @@ mediatype='cdrom'
 secure_boot='off'
 display='sdl'
 enable_kvm='yes'
+online='yes'
 qemu_options=()
+qemu_extra_options=()
 working_dir="$(mktemp -dt run_archiso.XXXXXXXXXX)"
 trap cleanup_working_dir EXIT
 
@@ -213,11 +227,15 @@ while (( ${#@} > 0 )); do
             enable_kvm='no'
             shift
             ;;
+        --offline)
+            online='no'
+            shift
+            ;;
         --)
-            # remaining arguments after "--" are passed to qemu
+            # the remaining arguments after "--" are passed directly to qemu
             shift # consume "--"
             if (( ${#@} > 0 )); then
-                qemu_options+=($*)
+                qemu_extra_options+=($*)
             fi
             break # exit the while loop
             ;;
