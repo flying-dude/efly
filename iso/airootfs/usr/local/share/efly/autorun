@@ -1,0 +1,68 @@
+#!/usr/bin/python
+
+# adjust max virtual file system space depending on available RAM
+# output is written to "/var/log/efly/autorun.log"
+
+# it is important to note that RAM and virtual fs share the total memory with each other.
+# that means the less RAM you use the more fs space you have. and vice versa.
+# what we do here is merely assign a max value for the file system, that cannot be exceeded.
+
+import os, subprocess, math
+from pathlib import Path
+
+# https://stackoverflow.com/questions/8659275/how-to-store-the-result-of-an-executed-shell-command-in-a-variable-in-python
+mem_kb = subprocess.check_output("grep MemTotal /proc/meminfo | awk '{print $2}'", shell=True).rstrip()
+mem_kb = int(mem_kb) # memory in KB
+mem_mb = mem_kb / 1024 # memory in MB
+mem = mem_mb / 1024 # memory in GB
+
+
+Path('/var/log/efly/').mkdir(parents=True, exist_ok=True)
+log = "/var/log/efly/autorun.log"
+
+def out(s):
+    os.system(f"echo {s} >> {log}")
+
+# let's do some math:
+#
+#  2a + b = 0 #  a = - b / 2
+# 64a + b = 1 #  a = (1 - b) / 64
+# - b / 2 = (1 - b) / 64
+# - 32 * b = 1 - b
+#
+# b = - 1 / 31 = - 2 / 62 # a = 1 / 62
+#
+# f(mem) = mem / 62 - 2 / 62 = (mem - 2) / 62
+# f(2GB) = 0; f(64GB) = 1
+
+# if RAM is 1GB or less we keep the default, which is 256MB
+if mem < 1: # mem <= 1GB
+    #out(f"echo memory is less than 1GB. not changing virtual file system size.")
+    out("less than one gb")
+    exit(0)
+
+# allow at least 25% of RAM for max virtual fs.
+# this factor grows to up to 80% on system with 64GB of RAM or more.
+factor = 0.25
+if mem >= 64:# 64GB <= mem
+    factor = 0.8
+elif mem >= 2: # 2GB <= mem <= 64
+    # with 2GB or more we assign at least 50% of RAM for max virtual fs; up to 80%
+    factor = 0.5 + 0.3 * (mem - 2) / 62
+else: # 1GB <= mem <= 2GB
+    # assign at least 25% of RAM. but no more than 50%
+    factor = 0.25 + 0.25 * (mem - 1) / 1
+
+out(f"factor: {factor}")
+out(f"memory in mb: {mem_mb}")
+
+remount_size = math.floor(factor * mem_mb)
+out(f"remount_size mb floor: {remount_size}")
+out(f"remount_size gb: {factor * mem}")
+
+# https://wiki.archlinux.org/title/Archiso#Adjusting_the_size_of_root_partition_on_the_fly
+# note that this command will note change available RAM. check with "free -h".
+# RAM will only shrink once we actually use the available fs space.
+cmd = f"mount -o remount,size={remount_size}M /run/archiso/cowspace"
+out(f"exec: {cmd}")
+os.system(cmd)
