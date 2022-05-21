@@ -29,8 +29,5 @@ MiscShowUnsafePasteDialog=TRUE
 ScrollingOnOutput=FALSE
 ScrollingLines=10000
 MiscRightClickAction=TERMINAL_RIGHT_CLICK_ACTION_CONTEXT_MENU
-ColorBackground=#2c2c2c
-ColorForeground=#dcdcdc
-ColorCursor=#dcdcdc
-ColorPalette=#3f3f3f;#705050;#60b48a;#dfaf8f;#9ab8d7;#dc8cc3;#8cd0d3;#dcdcdc;#709080;#dca3a3;#72d5a3;#f0dfaf;#94bff3;#ec93d3;#93e0e3;#ffffff
+ColorPalette=rgb(0,0,0);rgb(170,0,0);rgb(0,170,0);rgb(170,85,0);rgb(0,84,255);rgb(170,0,170);rgb(0,170,170);rgb(170,170,170);rgb(85,85,85);rgb(255,85,85);rgb(85,255,85);rgb(255,255,85);rgb(79,187,255);rgb(255,85,255);rgb(85,255,255);rgb(255,255,255)
 
