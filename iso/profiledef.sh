@@ -24,6 +24,8 @@ file_permissions=(
   ["/usr/local/bin/Installation_guide"]="0:0:755"
   ["/usr/local/bin/livecd-sound"]="0:0:755"
 
+  ["/usr/local/share/efly/autorun"]="0:0:755"
+
   ["/home/efly/Desktop/Keyboard.desktop"]="0:0:755"
   ["/home/efly/Desktop/GParted.desktop"]="0:0:755"
   ["/home/efly/Desktop/TigerVNC Viewer.desktop"]="0:0:755"
