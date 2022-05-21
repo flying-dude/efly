@@ -17,7 +17,12 @@ nano
 gvim
 emacs
 
-# cli applications
+# git stuff
+git
+meld
+tk
+
+# misc cli applications
 htop
 
 # web browsing
@@ -28,13 +33,14 @@ netsurf
 geany
 gparted
 tigervnc
+xterm
 
 # wireless config: https://wiki.archlinux.org/title/NetworkManager
 networkmanager
 network-manager-applet
 
-# sftp support for thunar file manager
-gvfs
+# obtain the "ifconfig" command
+net-tools
 
 # packages from arch linux releng config
 alsa-utils
