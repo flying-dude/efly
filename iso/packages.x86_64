@@ -16,6 +16,7 @@ fish
 nano
 gvim
 emacs
+micro
 
 # git stuff
 git
@@ -26,7 +27,7 @@ tk
 htop
 
 # web browsing
-chromium
+firefox
 netsurf
 
 # misc gui applications
