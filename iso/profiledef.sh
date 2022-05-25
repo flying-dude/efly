@@ -34,7 +34,7 @@ file_permissions=(
   ["/home/efly/Desktop/Emacs.desktop"]="0:0:755"
   ["/home/efly/Desktop/Geany.desktop"]="0:0:755"
 
-  ["/home/efly/Desktop/Chromium.desktop"]="0:0:755"
+  ["/home/efly/Desktop/Firefox.desktop"]="0:0:755"
   ["/home/efly/Desktop/NetSurf Web Browser.desktop"]="0:0:755"
 
   ["/home/efly/Desktop/Installation Guide.desktop"]="0:0:755"
