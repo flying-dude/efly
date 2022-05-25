@@ -66,13 +66,3 @@ out(f"remount_size gb: {factor * mem}")
 cmd = f"mount -o remount,size={remount_size}M /run/archiso/cowspace"
 out(f"exec: {cmd}")
 os.system(cmd)
-
-### the previous stuff in this file was for remounting cowspace.
-### some extra boot init stuff is placed below.
-
-# activate pacman colors
-os.system("sed -i 's/^#Color/Color/' /etc/pacman.conf")
-
-# activate ssh X11 forwarding
-os.system("sed -i 's/^#X11Forwarding no/X11Forwarding yes/' /etc/ssh/sshd_config")
-os.system("systemctl restart sshd.service")
