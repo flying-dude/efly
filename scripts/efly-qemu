@@ -139,7 +139,7 @@ run_image() {
         -boot order=d,menu=on,reboot-timeout=5000 \
         -m ${memory} \
         -k en-us \
-        -name archiso,process=archiso_0 \
+        -name efly-qemu,process=efly-qemu_0 \
         -device virtio-scsi-pci,id=scsi0 \
         -device "scsi-${mediatype%rom},bus=scsi0.0,drive=${mediatype}0" \
         -drive "id=${mediatype}0,if=none,format=raw,media=${mediatype/hd/disk},read-only=on,file=${image}" \
@@ -166,7 +166,7 @@ enable_kvm='yes'
 online='yes'
 qemu_options=()
 qemu_extra_options=()
-working_dir="$(mktemp -dt run_archiso.XXXXXXXXXX)"
+working_dir="$(mktemp -dt efly_qemu.XXXXXXXXXX)"
 trap cleanup_working_dir EXIT
 
 if (( ${#@} == 0 )); then
