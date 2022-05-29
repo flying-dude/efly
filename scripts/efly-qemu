@@ -72,11 +72,10 @@ copy_ovmf_vars() {
 }
 
 check_image() {
-    if [[ -z "$image" ]]; then
+    if test -z "$image"; then
         printf 'ERROR: %s\n' "Image name can not be empty."
         exit 1
-    fi
-    if [[ ! -f "$image" ]]; then
+    elif ! test -f "$image"; then
         printf 'ERROR: %s\n' "Image file (${image}) does not exist."
         exit 1
     fi
@@ -131,6 +130,26 @@ run_image() {
         qemu_options+=('-device' 'virtio-net-pci,romfile=,netdev=net0')
     fi
 
+    # determine qemu device type based on mime type of given image file
+    mime_type=$(file --brief --dereference --mime-type $image)
+    case $mime_type in
+        application/x-iso9660-image) # iso image
+            qemu_options+=(
+                "-device" "virtio-scsi-pci,id=scsi0"
+                "-device" "scsi-${mediatype%rom},bus=scsi0.0,drive=${mediatype}0"
+                "-drive" "id=${mediatype}0,if=none,format=raw,media=${mediatype/hd/disk},read-only=on,file=${image}"
+            )
+            ;;
+        application/octet-stream) # raw disk image
+            qemu_options+=("-drive" "format=raw,file=${image}")
+            ;;
+        *)
+            echo "error: unknown mime type of given image file"
+            echo "image file: $image"
+            echo "mime type: $mime_type"
+            exit 1
+    esac
+
     # use half of system memory for the VM
     memory=$(grep MemTotal /proc/meminfo | awk '{print $2}') # total system memory in KB
     memory="$(($memory / 2))K"
@@ -140,9 +159,6 @@ run_image() {
         -m ${memory} \
         -k en-us \
         -name efly-qemu,process=efly-qemu_0 \
-        -device virtio-scsi-pci,id=scsi0 \
-        -device "scsi-${mediatype%rom},bus=scsi0.0,drive=${mediatype}0" \
-        -drive "id=${mediatype}0,if=none,format=raw,media=${mediatype/hd/disk},read-only=on,file=${image}" \
         -display "${display}" \
         -vga virtio \
         -audiodev pa,id=snd0 \
@@ -169,7 +185,7 @@ qemu_extra_options=()
 working_dir="$(mktemp -dt efly_qemu.XXXXXXXXXX)"
 trap cleanup_working_dir EXIT
 
-# print usage and exit, if no arguments are provided
+# if no arguments are provided, print usage and exit
 if (( ${#@} == 0 )); then
     print_help
     exit 0
