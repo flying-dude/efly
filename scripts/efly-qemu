@@ -3,7 +3,6 @@
 # Modified "run_archiso.sh" from Archiso project.
 # Upstream: https://gitlab.archlinux.org/archlinux/archiso/-/blob/master/scripts/run_archiso.sh
 
-#
 # Copyright (C) 2020 David Runge <dvzrv@archlinux.org>
 # Copyright (C) 2022 efly Project
 #
@@ -15,6 +14,7 @@
 # Requirements:
 # - qemu
 # - edk2-ovmf (when UEFI booting)
+# - lsof (optional. checks if forwarded ssh port is available before using it.)
 
 set -eu
 
@@ -153,6 +153,24 @@ run_image() {
             exit 1
     esac
 
+    # map an outside port to ssh port 22 inside the qemu guest.
+    # if "lsof" command exists, we will check first if the outside port is available.
+    # otherwise we will simply map the default port "60022" without testing. this still works, if you run only one vm.
+    ssh_port=60022 # default port; gets mapped to port 22 (ssh) inside guest
+    if type -P lsof &> /dev/null; then # check if "lsof" command exists
+        while lsof -i:${ssh_port} &> /dev/null; do
+            ssh_port=$((ssh_port+1))
+            echo "[efly] testing tcp port: ${ssh_port}"
+        done
+    else
+        echo "[efly] using port ${ssh_port} without testing."
+        echo "[efly] install command 'lsof', if you want to run multiple qemu processes."
+        echo "[efly] then we can check for open ports before using them."
+        echo
+    fi
+
+    echo "[efly] mapping port: ${ssh_port} (host) -> 22 (guest)"
+
     # use half of system memory for the VM
     memory=$(grep MemTotal /proc/meminfo | awk '{print $2}') # total system memory in KB
     memory="$(($memory / 2))K"
@@ -167,7 +185,7 @@ run_image() {
         -audiodev pa,id=snd0 \
         -device ich9-intel-hda \
         -device hda-output,audiodev=snd0 \
-        -netdev user,id=net0,hostfwd=tcp::60022-:22 \
+        -netdev user,id=net0,hostfwd=tcp::${ssh_port}-:22 \
         -global ICH9-LPC.disable_s3=1 \
         -serial stdio \
         "${qemu_options[@]}" \
