@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# modified "run_archiso.sh" from archiso project.
-# upstream: https://gitlab.archlinux.org/archlinux/archiso/-/blob/master/scripts/run_archiso.sh
+# Modified "run_archiso.sh" from Archiso project.
+# Upstream: https://gitlab.archlinux.org/archlinux/archiso/-/blob/master/scripts/run_archiso.sh
 
 #
 # Copyright (C) 2020 David Runge <dvzrv@archlinux.org>
@@ -9,8 +9,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# A simple script to run an archiso image using qemu. The image can be booted
-# using BIOS or UEFI.
+# Boot a disk image using qemu. Predefines a number of useful options.
+# Works for both iso images and raw disk images.
 #
 # Requirements:
 # - qemu
@@ -27,6 +27,9 @@ print_help() {
 Usage:
     ${app_name} [options] <image> -- [qemu-options]
 
+Boot a disk image using qemu. Predefines a number of useful options.
+Works for both iso images and raw disk images.
+
 Options:
     --help -h             print help
 
@@ -42,10 +45,10 @@ Options:
     --offline             disable networking access
 
 Examples:
-    Run an image using UEFI:
+    Run an iso image using UEFI mode:
     $ ${app_name} --uefi archiso-2020.05.23-x86_64.iso
 
-    Use a raw disk image as virtual hard drive:
+    Use a raw disk image as a virtual hard drive:
     $ qemu-img create myimage.img 10G
     $ ${app_name} archiso-2020.05.23-x86_64.iso -- -drive format=raw,file=myimage.img
 
@@ -72,11 +75,10 @@ copy_ovmf_vars() {
 }
 
 check_image() {
-    if [[ -z "$image" ]]; then
+    if test -z "$image"; then
         printf 'ERROR: %s\n' "Image name can not be empty."
         exit 1
-    fi
-    if [[ ! -f "$image" ]]; then
+    elif ! test -f "$image"; then
         printf 'ERROR: %s\n' "Image file (${image}) does not exist."
         exit 1
     fi
@@ -131,6 +133,26 @@ run_image() {
         qemu_options+=('-device' 'virtio-net-pci,romfile=,netdev=net0')
     fi
 
+    # determine qemu device type based on mime type of given image file
+    mime_type=$(file --brief --dereference --mime-type $image)
+    case $mime_type in
+        application/x-iso9660-image) # iso image
+            qemu_options+=(
+                "-device" "virtio-scsi-pci,id=scsi0"
+                "-device" "scsi-${mediatype%rom},bus=scsi0.0,drive=${mediatype}0"
+                "-drive" "id=${mediatype}0,if=none,format=raw,media=${mediatype/hd/disk},read-only=on,file=${image}"
+            )
+            ;;
+        application/octet-stream) # raw disk image
+            qemu_options+=("-drive" "format=raw,file=${image}")
+            ;;
+        *)
+            echo "error: unknown mime type of given image file"
+            echo "image file: $image"
+            echo "mime type: $mime_type"
+            exit 1
+    esac
+
     # use half of system memory for the VM
     memory=$(grep MemTotal /proc/meminfo | awk '{print $2}') # total system memory in KB
     memory="$(($memory / 2))K"
@@ -140,9 +162,6 @@ run_image() {
         -m ${memory} \
         -k en-us \
         -name efly-qemu,process=efly-qemu_0 \
-        -device virtio-scsi-pci,id=scsi0 \
-        -device "scsi-${mediatype%rom},bus=scsi0.0,drive=${mediatype}0" \
-        -drive "id=${mediatype}0,if=none,format=raw,media=${mediatype/hd/disk},read-only=on,file=${image}" \
         -display "${display}" \
         -vga virtio \
         -audiodev pa,id=snd0 \
@@ -169,7 +188,7 @@ qemu_extra_options=()
 working_dir="$(mktemp -dt efly_qemu.XXXXXXXXXX)"
 trap cleanup_working_dir EXIT
 
-# print usage and exit, if no arguments are provided
+# if no arguments are provided, print usage and exit
 if (( ${#@} == 0 )); then
     print_help
     exit 0
