@@ -5,5 +5,5 @@ sudo pacman --sync archiso
 git clone https://github.com/flying-dude/efly
 cd efly
 sudo mkarchiso -v iso
-./scripts/run_archiso_efly out/efly-live-2022.05.08-x86_64.iso
+./scripts/efly-qemu out/efly-live-2022.05.08-x86_64.iso
 ```
