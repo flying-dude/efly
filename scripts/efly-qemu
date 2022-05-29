@@ -169,9 +169,10 @@ qemu_extra_options=()
 working_dir="$(mktemp -dt efly_qemu.XXXXXXXXXX)"
 trap cleanup_working_dir EXIT
 
+# print usage and exit, if no arguments are provided
 if (( ${#@} == 0 )); then
     print_help
-    exit 1
+    exit 0
 fi
 
 # parse command-line arguments
