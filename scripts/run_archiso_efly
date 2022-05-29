@@ -39,7 +39,6 @@ Options:
     --vnc -v              use VNC display (instead of default SDL)
 
     --disable-kvm         run qemu with kvm disabled
-    --debug               print extra info for debugging purposes
     --offline             disable networking access
 
 Examples:
@@ -217,10 +216,6 @@ while (( ${#@} > 0 )); do
         -v|--vnc)
             display='none'
             qemu_options+=(-vnc 'vnc=0.0.0.0:0,vnc=[::]:0')
-            shift
-            ;;
-        --debug)
-            set -x
             shift
             ;;
         --disable-kvm)
