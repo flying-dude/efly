@@ -4,7 +4,7 @@ One way to turn a USB stick into a bootable device is to place a suitable [disk 
 
 But it is not sufficient to just *copy* a disk image to the file system of the stick. The disk image has its own partition table, file systems and boot facilities. Therefore, it needs to overwrite the data on the stick at [block device](https://unix.stackexchange.com/questions/259193/what-is-a-block-device) level.
 
-The image needs to be copied *verbatim* to the stick; starting the very first byte (or bit) of the USB stick. This facilitates for the [UEFI](https://en.wikipedia.org/wiki/Unified_Extensible_Firmware_Interface) firmware to correctly interact with the boot facilities of the disk image.
+The image needs to be copied *verbatim* to the stick; starting the very first byte (or bit) of the USB stick. This facilitates for the hardware firmware ([UEFI](https://en.wikipedia.org/wiki/Unified_Extensible_Firmware_Interface) or [BIOS](https://en.wikipedia.org/wiki/BIOS)) to correctly interact with the boot code placed on the disk image.
 
 This section describes ways how to interact with block devices directly, so that we can properly install disk images on them.
 
