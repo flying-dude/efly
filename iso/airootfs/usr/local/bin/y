@@ -1,0 +1,23 @@
+#!/usr/bin/fish
+# SPDX-License-Identifier: 0BSD
+
+# wrapper around yay/paru/pacman, that installs packages with "--noconfirm" option.
+# y firefox => sudo pacman --sync --noconfirm firefox
+
+# TODO add -a/--ask option that removes "--noconfirm"
+
+if type -P yay &> /dev/null
+    set exe yay
+else if type -P paru &> /dev/null
+    set exe paru
+else
+    set exe sudo pacman
+end
+
+# perform system upgrade if no arguments are given
+if test (count $argv) -lt 1
+    $exe --sync --refresh --sysupgrade --noconfirm
+    exit 0
+end
+
+$exe --sync --noconfirm $argv
