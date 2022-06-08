@@ -1,0 +1,12 @@
+# mkinitcpio preset file for the 'linux' package
+
+# "How to stop mkinitcpio from making a fallback image?"
+# https://bbs.archlinux.org/viewtopic.php?id=197947
+# pacman will actually run mkinitcpio locally after installing or updating the kernel.
+# meaning if we remove the fallback image it stays removed even after upgrades, which is what we want.
+
+PRESETS=('default')
+
+default_config="/etc/mkinitcpio.conf"
+default_kver="/boot/vmlinuz-linux"
+default_image="/boot/initramfs-linux.img"

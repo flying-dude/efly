@@ -1,0 +1,7 @@
+[Desktop Entry]
+Version=1.0
+Type=Link
+Name=Installation Guide
+Comment=Open the Arch Linux installation guide in the browser.
+Icon=archlinux-logo
+URL=https://wiki.archlinux.org/title/Installation_guide

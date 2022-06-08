@@ -1,0 +1,46 @@
+#!/usr/bin/fish
+# SPDX-License-Identifier: 0BSD
+
+# wrapper around yay/paru/pacman, that installs packages with "--noconfirm" option.
+# y firefox => sudo pacman --sync --noconfirm firefox
+
+# parse arguments. note that "argparse" will conveniently remove parsed arguments
+# from $argv and leave the remaining arguments intact: y -a fish firefox htop => fish firefox htop
+argparse h/help a/ask -- $argv
+or exit 1 # exit if argparse failed because it found an option it didn't recognize - it will print an error
+
+# print help and exit
+if set -q _flag_help
+    echo \
+"Usage: y [-h|--help] [-a|--ask] [PACKAGES...]
+
+Wrapper script around yay/paru/pacman to install Arch Linux packages.
+Does a full system upgrade on empty input.
+
+Examples:
+    \$ y # sudo pacman --sync --refresh --sysupgrade --noconfirm
+    \$ y firefox # sudo pacman --sync --noconfirm firefox"
+    exit 0
+end
+
+# determine which arch package manager to use
+if type -P yay &> /dev/null
+    set exe yay
+else if type -P paru &> /dev/null
+    set exe paru
+else
+    set exe sudo pacman
+end
+
+# add "--noconfirm" flag to pacman, unless the user wants pacman to "y --ask" first.
+if not set -q _flag_ask
+    set exe $exe --noconfirm
+end
+
+# perform system upgrade if no arguments are given
+if test (count $argv) -lt 1
+    $exe --sync --refresh --sysupgrade
+    exit 0
+end
+
+$exe --sync $argv

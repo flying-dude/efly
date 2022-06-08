@@ -1,0 +1,12 @@
+[Unit]
+Description=Expand the writable root partition to full size at boot.
+
+[Service]
+# oneshot services:
+# https://trstringer.com/simple-vs-oneshot-systemd-service/
+# https://gist.github.com/drmalex07/d006f12914b21198ee43
+Type=oneshot
+ExecStart=/etc/systemd/system/boot-growfs
+
+[Install]
+WantedBy=multi-user.target
