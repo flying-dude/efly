@@ -169,7 +169,7 @@ run_image() {
         echo
     fi
 
-    echo "[efly] mapping port: ${ssh_port} (host) -> 22 (guest)"
+    echo "[efly] mapping ssh port: ${ssh_port} (host) -> 22 (guest)"
 
     # use half of system memory for the VM
     memory=$(grep MemTotal /proc/meminfo | awk '{print $2}') # total system memory in KB

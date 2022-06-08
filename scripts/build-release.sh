@@ -23,8 +23,8 @@ mount --bind image image
 cd image
 cp /etc/resolv.conf etc
 mount -t proc none proc
-mount --make-rslave --rbind /sys sys
-mount --make-rslave --rbind /dev dev
+mount --rbind /sys sys
+mount --rbind /dev dev
 cd ..
 
 chroot image /bin/bash -c "pacman-key --init"

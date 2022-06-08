@@ -1,0 +1,38 @@
+#!/usr/bin/python
+# see logs via "journalctl --unit=boot-growfs"
+
+import os, subprocess, json
+from pathlib import Path
+
+partition = Path("/dev/disk/by-partlabel/efly-overlay")
+
+if not partition.is_symlink():
+    print(f"error. could not find overlay partition: {partition}")
+    exit(1)
+
+read_symlink = os.path.realpath(partition)
+part = os.path.basename(read_symlink)
+
+lsblk = subprocess.check_output(["lsblk", "--json"]).decode('utf-8').rstrip()
+lsblk = json.loads(lsblk)
+
+device = None
+for blockdevice in lsblk["blockdevices"]:
+    if "children" in blockdevice:
+        for child in blockdevice["children"]:
+            if child["name"] == part:
+                device = blockdevice["name"]
+
+if not device:
+    print(f"error. could not find blockdevice for partition '{part}'.")
+    exit(1)
+
+device = Path(f"/dev/{device}")
+
+def s(cmd):
+    print(f"[exec] {cmd}")
+    return os.system(cmd)
+
+s(f"growpart {device} 3")
+s(f"e2fsck -fy {partition}")
+s(f"resize2fs {partition}")

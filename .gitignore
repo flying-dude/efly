@@ -2,3 +2,9 @@
 /work
 /out
 
+# exclude data created by efly-img
+/img/mkosi.cache
+/img/efly-live.img
+/img/efly-live-fsroot
+/img/efly-live.sfs
+/img/boot

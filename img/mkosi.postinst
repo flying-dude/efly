@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# create user "efly" with groups suggested in arch wiki:
+# https://wiki.archlinux.org/title/users_and_groups#User_groups
+# note: not creating home. it already exists in "mkosi.extra/" and "/etc/skel" has already been copied.
+useradd --no-create-home --groups adm,ftp,games,http,log,rfkill,sys,systemd-journal,uucp,wheel efly
+
+# mkosi will give ownership of efly user files to root, which we are going to fix here.
+chown --recursive efly:efly /home/efly
+
+# mkosi will host mkinitcpio.conf from host system, which is not what we want
+# so we delete the files created by mkosi and replace with our own
+rm /boot/initramfs-linux*.img
+mkinitcpio --allpresets
+
+# enable systemd services
+systemctl enable NetworkManager.service
+systemctl enable reflector.service
+systemctl enable boot-growfs.service
