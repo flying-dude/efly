@@ -1,4 +1,5 @@
-Configuration data for creating a bootable iso image. Use the [Archiso](https://wiki.archlinux.org/title/Archiso) tool to convert this configuration into an iso file:
+Configuration data for creating a bootable iso image.
+Use the [Archiso](https://wiki.archlinux.org/title/Archiso) tool to convert this configuration into an iso file:
 
 ```
 sudo pacman --sync archiso

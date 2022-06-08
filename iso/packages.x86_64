@@ -25,6 +25,7 @@ tk
 
 # misc cli applications
 htop
+wget
 
 # web browsing
 firefox
