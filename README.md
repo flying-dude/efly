@@ -1,5 +1,6 @@
 A graphical live system based on Arch Linux.
 Suitable for installing Arch Linux or as a rescue system for computers without a working operating system.
+How to [flash](docs/flash.md) a USB stick?
 
 The image in [iso format](https://en.wikipedia.org/wiki/Optical_disc_image) has a volatile root file system, which deletes all changes on reboot.
 The second option is a [raw disk image](https://en.wikipedia.org/wiki/IMG_(file_format)) with persistent storage.
@@ -10,14 +11,13 @@ It will retain changes among reboots.
 est/efly-live.img">img</a></b>
 </p>
 
-How to [flash](docs/flash.md) a USB stick?
-
 ```
-sudo pacman --sync archiso
+sudo pacman --sync mkosi
 git clone https://github.com/flying-dude/efly
 cd efly
-sudo mkarchiso -v iso
-./scripts/efly-qemu out/efly-live-2022.05.08-x86_64.iso
+./scripts/efly-img
+truncate --size=10G img/efly-live.img
+./scripts/efly-qemu --uefi img/efly-live.img
 ```
 
 ![Efly Linux Live](screenshot.png)

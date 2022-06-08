@@ -5,7 +5,7 @@ sudo pacman --sync mkosi
 git clone https://github.com/flying-dude/efly
 cd efly
 ./scripts/efly-img
-./scripts/efly-qemu --uefi img/efly-live.img
+ls img/efly-live.iso # location of the image
 ```
 
 # Increase Storage Capacity
