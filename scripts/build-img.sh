@@ -38,18 +38,17 @@ chroot image /bin/bash -c "sed -i 's/^#Server/Server/' /etc/pacman.d/mirrorlist"
 # https://gist.github.com/neonb88/5ba848f1aef21ab67c7a4ff28e6d2ea3
 chroot image /bin/bash -c "sed -i 's/^CheckSpace/#CheckSpace/' /etc/pacman.conf"
 
-# install the "archiso" package
+# install packages
 chroot image /bin/bash -c "pacman --sync --refresh --refresh --sysupgrade --sysupgrade --noconfirm"
-chroot image /bin/bash -c "pacman --sync --noconfirm archiso"
+chroot image /bin/bash -c "pacman --sync --noconfirm mkosi python-docopt sudo"
 
-# create the actual build output. this is a bootable iso file located inside folder "image/out/"
-cp --recursive iso/ image/
-chroot image /bin/bash -c "mkarchiso -v /iso" # image/out/efly-live-2022.05.13-x86_64.iso
-
-mv image/out/*.iso efly-live.iso
-b2sum efly-live.iso > efly-live.iso.b2sum
+# copy data into chroot and create the img file
+cp --recursive scripts/ image/
+cp --recursive img/ image/
+chroot image /bin/bash -c "/scripts/efly-img"
+mv image/img/efly-live.img .
 
 # unmount previously mounted special directories
-#umount image/proc
-#umount image/sys
-#umount image/dev
+umount --lazy image/proc
+umount --lazy image/sys
+umount --lazy image/dev
