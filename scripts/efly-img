@@ -15,10 +15,28 @@ from docopt import docopt # https://github.com/docopt/
 arguments = docopt(__doc__, version='efly-img 0.0.1')
 
 import os, subprocess, atexit
-script_dir = os.path.dirname(os.path.realpath(__file__))
-
 from pathlib import Path
+
+script_dir = os.path.dirname(os.path.realpath(__file__))
 script_dir = Path(script_dir)
+
+from shutil import which
+missing_pkg = False
+def cmd2pkg(cmd, pkg):
+    global missing_pkg
+    if which(cmd) is None:
+        print(f"error. missing command '{cmd}'. if running arch linux, install with: pacman --sync {pkg}")
+        missing_pkg = True
+
+# check for required shell commands
+cmd2pkg("sudo", "sudo")
+cmd2pkg("mkfs.vfat", "dosfstools")
+cmd2pkg("mkfs.ext4", "e2fsprogs")
+cmd2pkg("sgdisk", "gptfdisk")
+
+if missing_pkg:
+    print("exiting due to missing shell command.")
+    exit(1)
 
 # check if config dir is present
 img_dir = script_dir.parent / "img"
@@ -87,9 +105,6 @@ def info(msg):
 out_dir = img_dir / "out"
 out_dir.mkdir(exist_ok=True)
 os.chdir(out_dir)
-
-# make sure dependencies are installed
-sudo("pacman --sync --noconfirm dosfstools e2fsprogs squashfs-tools gptfdisk")
 
 # set up data dir
 chroot_fs = out_dir / "chroot-fs"
