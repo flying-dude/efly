@@ -40,15 +40,15 @@ chroot image /bin/bash -c "sed -i 's/^CheckSpace/#CheckSpace/' /etc/pacman.conf"
 
 # install packages
 chroot image /bin/bash -c "pacman --sync --refresh --refresh --sysupgrade --sysupgrade --noconfirm"
-chroot image /bin/bash -c "pacman --sync --noconfirm mkosi python-docopt sudo"
+chroot image /bin/bash -c "pacman --sync --noconfirm sudo python-docopt"
 
 # copy data into chroot and create the img file
 cp --recursive scripts/ image/
 cp --recursive img/ image/
 chroot image /bin/bash -c "/scripts/efly-img"
-mv image/img/efly-live.img .
+mv image/img/out/efly-live.img .
 
 # unmount previously mounted special directories
-umount --lazy image/proc
-umount --lazy image/sys
-umount --lazy image/dev
+#umount --lazy image/proc
+#umount --lazy image/sys
+#umount --lazy image/dev

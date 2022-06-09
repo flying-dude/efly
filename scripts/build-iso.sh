@@ -48,6 +48,6 @@ chroot image /bin/bash -c "mkarchiso -v /iso" # image/out/efly-live-2022.05.13-x
 mv image/out/*.iso efly-live.iso
 
 # unmount previously mounted special directories
-umount --lazy image/proc
-umount --lazy image/sys
-umount --lazy image/dev
+#umount --lazy image/proc
+#umount --lazy image/sys
+#umount --lazy image/dev
