@@ -14,14 +14,41 @@ Options:
 from docopt import docopt # https://github.com/docopt/
 arguments = docopt(__doc__, version='efly-img 0.0.1')
 
-import os, subprocess
+import os, subprocess, atexit
 script_dir = os.path.dirname(os.path.realpath(__file__))
 
 from pathlib import Path
 script_dir = Path(script_dir)
 
+# check if config dir is present
 img_dir = script_dir.parent / "img"
-os.chdir(img_dir)
+if not img_dir.is_dir():
+    print(f"error. config folder not present: {img_dir}")
+    exit(1)
+
+# check for presence of package list
+package_txt = img_dir / "packages.txt"
+if not package_txt.is_file():
+    print(f"error. package file not found: {packages_txt}")
+    exit(1)
+
+# read and parse list of packages
+packages = []
+with open(package_txt) as lines:
+    for line in lines:
+        line = line.rstrip()
+        if len(line) == 0:
+            continue
+
+        line = line.split('#')[0]
+        if len(line) == 0:
+            continue
+
+        line = line.split(' ')
+        for pkg in line:
+            if len(pkg) == 0:
+                continue
+            packages.append(pkg)
 
 def r(args):
     print(f"[exec] {' '.join(str(arg) for arg in args)}")
@@ -31,6 +58,20 @@ def s(cmd):
     print(f"[exec] {cmd}")
     return os.system(cmd)
 
+def sudo(args):
+    if type(args) == str:
+        return s(f"sudo {args}")
+    else:
+        return r(["sudo"] + args)
+
+def chroot(path, args):
+    sudo(["arch-chroot", path] + args)
+
+    # lazy umount /dev broke my system, for some reason, when using regular chroot with manual mounts.
+    # arch-chroot seems to umount /dev correctly but sometimes fails to umount /proc (it simply stays active after arch-chroot).
+    # however, we can manually "umount --lazy /proc" without breaking our system. so we do just that.
+    sudo(["umount", "--lazy", path / "proc"])
+
 def get(args):
     print(f"[get] {' '.join(str(arg) for arg in args)}")
     return subprocess.check_output(args).decode('utf-8').rstrip()
@@ -39,77 +80,96 @@ def get(args):
 def du(path):
     return int(get(['sudo', 'du','--summarize', '--bytes', path]).split()[0])
 
-if Path("efly-live-fsroot").is_dir():
-    print(f"mkosi output directory 'efly-live-fsroot' already exists. skipping mkosi.")
-else:
-    mkosi_result = s("sudo mkosi")
-    if not mkosi_result == 0:
-        print("mkosi returned error. exiting.")
-        exit(mkosi_result)
-    s("sudo mv efly-live-fsroot/boot boot") # move the data for boot partition outside of squashfs data dir
-    s("sudo mkdir efly-live-fsroot/boot") # we still want an empty boot folder for mounting tho?
+def info(msg):
+    print(f"[info] {msg}")
 
-# create squashfs
-if Path("efly-live.sfs").is_file():
-    print("squashfs file 'efly-live.sfs' already exists. skipping mksquashfs.")
-else:
-    # Creating a highly compressed SquashFS from a folder
-    # https://techoverflow.net/2013/01/11/creating-a-highly-compressed-squashfs-from-a-folder/
-    s("sudo mksquashfs efly-live-fsroot/ efly-live.sfs -b 1048576 -comp xz -Xdict-size 100%")
+# place all new data inside "out/" folder
+out_dir = img_dir / "out"
+out_dir.mkdir(exist_ok=True)
+os.chdir(out_dir)
 
-    # https://unix.stackexchange.com/questions/256898/squashfs-minimal-compression
-    #s("sudo mksquashfs efly-live-fsroot/ efly-live.sfs -comp lz4")
+# make sure dependencies are installed
+sudo("pacman --sync --noconfirm dosfstools e2fsprogs squashfs-tools gptfdisk")
 
-# Installing grub in the boot partition next.
+# set up data dir
+chroot_fs = out_dir / "chroot-fs"
+sudo(["mkdir", chroot_fs])
 
 # grub-install will insist that the target location is a FAT partition.
 # but we need the full size of /boot folder before we can create the partition.
-# so we create a temporary file first and put the grub stuff there
-s("truncate --size=128M grub-tmp.img")
-s("mkfs.vfat grub-tmp.img")
+# so we create a temporary image file first and put the grub stuff there
+grub_tmp = out_dir / "grub-tmp.img"
+r(["truncate", "--size=128M", grub_tmp])
+r(["mkfs.vfat", grub_tmp])
+atexit.register(r, ["rm", grub_tmp])
 
-# copy boot stuff into grub-tmp
-s("mkdir grub-tmp/")
-s("sudo mount grub-tmp.img grub-tmp/")
-r(["sudo", "cp", "--recursive", "--no-target-directory", "boot/", "grub-tmp/"])
-s("sudo umount grub-tmp/")
-s("rmdir grub-tmp/")
+# mount grub image file
+chroot_boot = chroot_fs / "boot"; sudo(["mkdir", chroot_boot])
+sudo(["mount", grub_tmp, chroot_boot])
 
-# now override /boot inside fsroot. only this time it is a real FAT partition, so that grub-install won't complain.
-s("sudo mkdir --parent efly-live-fsroot/boot")
-s("sudo mount grub-tmp.img efly-live-fsroot/boot")
+# run pacstrap
+pacstrap_result = sudo(["pacstrap", "-cGM", chroot_fs] + packages)
+if not pacstrap_result.returncode == 0:
+    print(f"error. pacstrap returned non-zero: {pacstrap_result.returncode}")
+    exit(1)
 
-# prepare chroot
-s("sudo cp /etc/resolv.conf efly-live-fsroot/etc")
-s("sudo mount -t proc none efly-live-fsroot/proc")
-s("sudo mount --rbind /sys efly-live-fsroot/sys")
-s("sudo mount --rbind /dev efly-live-fsroot/dev")
-
+# obtain "month-year" for bootloader id
 import datetime
 year = datetime.datetime.now().year
 month = datetime.datetime.now().month
-month = f"{'{:02}'.format(month)}-{year}"
-r([
-    "sudo", "chroot", "efly-live-fsroot", "/bin/bash", "-c",
-    'grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id="Efly Live {month} [GRUB]" --recheck --removable'
-])
+month_year = f"{'{:02}'.format(month)}-{year}"
+
+# install grub. this one is only to obtain the correct size for boot partition
+# we run grub-install "for real" a second time further below
+chroot(chroot_fs, ["grub-install", "--target=x86_64-efi", "--efi-directory=/boot", f"--bootloader-id=\"Efly Live {month_year} [GRUB]\"", "--recheck", "--removable"])
+
+chroot(chroot_fs, ["pacman-key", "--init"])
+chroot(chroot_fs, ["pacman-key", "--populate"])
+
+# copy user-defined filesystem data
+mkosi_extra = img_dir / "mkosi.extra"
+if mkosi_extra.is_dir():
+    sudo(["cp", "--recursive", "--no-target-directory", mkosi_extra, chroot_fs])
+
+# execute image customization script, if it exists
+mkosi_postinst = img_dir / "mkosi.postinst"
+if mkosi_postinst.is_file():
+    # copy files
+    sudo(["cp", mkosi_postinst, chroot_fs])
+    sudo(["chmod", "+x", chroot_fs / "mkosi.postinst"])
+
+    # exec postinst inside chroot
+    chroot(chroot_fs, ["/mkosi.postinst"])
+
+    # cleanup files
+    sudo(["rm", chroot_fs / "mkosi.postinst"])
 
 # calculate size of boot partition
 import math
-boot_size_B = du("efly-live-fsroot/boot")
+boot_size_B = du(chroot_fs / "boot")
 boot_size_M = boot_size_B / 1024 / 1024
 boot_size_M = math.ceil(boot_size_M)
 boot_size_M = boot_size_M + 2 # two extra MiB for boot partition. for file system metadata etc.
 print(f"/boot size: {boot_size_M}M")
 
-# finish chroot
-s("sudo umount --lazy efly-live-fsroot/proc")
-s("sudo umount --lazy efly-live-fsroot/sys")
-s("sudo umount --lazy efly-live-fsroot/dev")
+# going to create squashfs now. need to exclude data of boot partition from that
+sudo(["umount", "--lazy", chroot_boot])
 
-# now we are ready to create the final image
+# create squashfs
+efly_live_sfs = out_dir / "efly-live.sfs"
+if efly_live_sfs.is_file():
+    info(f"skipping mksquashfs. squashfs file already exists: {efly_live_sfs}")
+else:
+    # Creating a highly compressed SquashFS from a folder
+    # https://techoverflow.net/2013/01/11/creating-a-highly-compressed-squashfs-from-a-folder/
+    sudo(["mksquashfs", chroot_fs, efly_live_sfs, "-b", "1048576", "-comp", "xz", "-Xdict-size", "100%"])
 
-sfs_size_B = Path("efly-live.sfs").stat().st_size
+    # https://unix.stackexchange.com/questions/256898/squashfs-minimal-compression
+    #sudo(["mksquashfs", chroot_fs, efly_live_sfs, "-comp", "lz4"])
+
+# we are now ready to create the final image
+
+sfs_size_B = efly_live_sfs.stat().st_size
 sfs_size_M = sfs_size_B / 1024 / 1024
 sfs_size_M = math.ceil(sfs_size_M)
 print(f"sfs size: {sfs_size_M}M")
@@ -120,6 +180,7 @@ gpt_size_M = 1 # GUID partition table takes 1MiB
 # need +1 extra M for some reason here; otherwise the 3rd partition won't fit
 s(f"truncate --size={gpt_size_M + boot_size_M + sfs_size_M + ext4_size_M + 1}M efly-live.img")
 
+# create partitions using sgdisk
 s(f'sgdisk --new=1:0:+{boot_size_M}M --typecode 1:EF00 --change-name 1:"efly-boot" efly-live.img'); print()
 s(f'sgdisk --new=2:0:+{sfs_size_M}M --change-name 2:"efly-squash" efly-live.img'); print()
 s(f'sgdisk --new=3:0:+{ext4_size_M}M --change-name 3:"efly-overlay" efly-live.img'); print()
@@ -128,69 +189,54 @@ s(f"sgdisk --print efly-live.img"); print()
 # set up loop device
 loop = get(["sudo", "losetup", "--show", "--find", "--partscan", "efly-live.img"])
 print(f"loop: {loop}")
+atexit.register(sudo, f"losetup --detach {loop}")
 
 # initialize partitions
-s(f"sudo mkfs.vfat {loop}p1")
-s(f"sudo cp efly-live.sfs {loop}p2")
-s(f"sudo mkfs.ext4 {loop}p3")
+sudo(f"mkfs.vfat {loop}p1")
+sudo(f"cp efly-live.sfs {loop}p2")
+sudo(f"mkfs.ext4 {loop}p3")
 
 # helper dir for mounting image partitions
-s("sudo mkdir mnt/")
+sudo("mkdir mnt/"); atexit.register(sudo, "rmdir mnt/")
 
 # copy helper /boot to real /boot
-s(f"sudo mount {loop}p1 mnt/")
-s(f"sudo cp --recursive --no-target-directory efly-live-fsroot/boot mnt/")
-s(f"sudo umount mnt/")
+sudo("mkdir mnt-boot/"); sudo(["mount", grub_tmp, "mnt-boot/"])
+sudo(f"mount {loop}p1 mnt/")
+sudo(f"cp --recursive --no-target-directory mnt-boot/ mnt/")
+sudo(f"umount mnt/")
+sudo("umount mnt-boot/"); sudo("rmdir mnt-boot/")
 
-# delete helper /boot
-s("sudo umount efly-live-fsroot/boot") # the "--lazy" version does not actually do anything, it seems
-s("rm grub-tmp.img")
+# mount squashfs partition
+sudo("mkdir mnt/squashfs"); atexit.register(sudo, "rmdir mnt/squashfs")
+sudo(f"mount {loop}p2 mnt/squashfs"); atexit.register(sudo, "umount mnt/squashfs")
 
-# prepare overlay
-s("sudo mkdir --parents mnt/overlay")
-s(f"sudo mount {loop}p3 mnt/overlay")
-s("sudo mkdir mnt/overlay/upper")
-s("sudo mkdir mnt/overlay/work")
+# mount overlay partition
+sudo("mkdir mnt/overlay"); atexit.register(sudo, "rmdir mnt/overlay")
+sudo(f"mount {loop}p3 mnt/overlay"); atexit.register(sudo, "umount mnt/overlay")
 
-# mount all image partitions
-s("sudo mkdir mnt/squashfs"); s(f"sudo mount {loop}p2 mnt/squashfs")
-s("sudo mkdir mnt/root")
-s(f"sudo mount -t overlay -o lowerdir=mnt/squashfs,upperdir=mnt/overlay/upper,workdir=mnt/overlay/work none mnt/root")
-s(f"sudo mount {loop}p1 mnt/root/boot") # squashfs should contain empty boot folder, which we can mount here
+# create overlay "upper" and "work". they will be cleared at the end using atexit.
+sudo("mkdir mnt/overlay/upper"); atexit.register(sudo, "mkdir mnt/overlay/upper"); atexit.register(sudo, "rm --recursive mnt/overlay/upper")
+sudo("mkdir mnt/overlay/work"); atexit.register(sudo, "mkdir mnt/overlay/work"); atexit.register(sudo, "rm --recursive mnt/overlay/work")
 
-# prepare a second chroot
-s("sudo cp /etc/resolv.conf mnt/root/etc/")
-s("sudo mount -t proc none mnt/root/proc")
-s("sudo mount --rbind /sys mnt/root/sys")
-s("sudo mount --rbind /dev mnt/root/dev")
+# mount overlayfs
+sudo("mkdir mnt/root"); atexit.register(sudo, "rmdir mnt/root")
+sudo(f"mount -t overlay -o lowerdir=mnt/squashfs,upperdir=mnt/overlay/upper,workdir=mnt/overlay/work none mnt/root"); atexit.register(sudo, "umount mnt/root")
+
+# mount boot partition
+sudo(f"mount {loop}p1 mnt/root/boot")
+atexit.register(sudo, "umount mnt/root/boot")
 
 # we installed grub before to get the right size for the boot partition.
 # but we actually need to install it relative to the obtained loop device, which we have only now.
 # so we install it a second time here.
-s("sudo rm --recursive mnt/root/boot/grub")
-r([
-    "sudo", "chroot", "mnt/root", "/bin/bash", "-c",
-    f'grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id="Efly Live {month} [GRUB]" --recheck --removable {loop}'
-])
+sudo("rm --recursive mnt/root/boot/grub")
+chroot(out_dir / "mnt" / "root", [
+        "grub-install",
+        "--target=x86_64-efi",
+        "--efi-directory=/boot",
+        f"--bootloader-id=\"Efly Live {month_year} [GRUB]\"",
+        "--recheck",
+        "--removable", loop])
 
 # copy grub config
-s("sudo cp grub.cfg mnt/root/boot/grub/")
-
-# finish second chroot
-s("sudo umount --lazy mnt/root/proc")
-s("sudo umount --lazy mnt/root/sys")
-s("sudo umount --lazy mnt/root/dev")
-
-# clear overlay
-s("sudo rm --recursive mnt/overlay/upper"); s("sudo mkdir mnt/overlay/upper")
-s("sudo rm --recursive mnt/overlay/work"); s("sudo mkdir mnt/overlay/work")
-
-# unmount image partitions
-s("sudo umount mnt/root/boot")
-s("sudo umount mnt/root"); s("sudo rmdir mnt/root")
-s("sudo umount mnt/overlay"); s("sudo rmdir mnt/overlay")
-s("sudo umount mnt/squashfs"); s("sudo rmdir mnt/squashfs")
-s("sudo rmdir mnt/")
-
-# detach loop device
-s(f"sudo losetup --detach {loop}")
+sudo(["cp", img_dir/ "grub.cfg", out_dir / "mnt" / "root"/ "boot" / "grub"])

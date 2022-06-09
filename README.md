@@ -12,12 +12,12 @@ est/efly-live.img">img</a></b>
 </p>
 
 ```
-sudo pacman --sync mkosi
+sudo pacman --sync python-docopt dosfstools e2fsprogs squashfs-tools gptfdisk
 git clone https://github.com/flying-dude/efly
 cd efly
 ./scripts/efly-img
-truncate --size=10G img/efly-live.img
-./scripts/efly-qemu --uefi img/efly-live.img
+truncate --size=10G img/out/efly-live.img
+./scripts/efly-qemu --uefi img/out/efly-live.img
 ```
 
 ![Efly Linux Live](screenshot.png)
