@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# configure and generate locale
+echo "LANG=en_US.UTF-8" > /etc/locale.conf
+echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
+locale-gen
+
 # create user "efly" with groups suggested in arch wiki:
 # https://wiki.archlinux.org/title/users_and_groups#User_groups
 # note: not creating home. it already exists in "mkosi.extra/" and "/etc/skel" has already been copied.
