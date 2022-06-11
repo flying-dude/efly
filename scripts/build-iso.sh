@@ -30,7 +30,8 @@ cd ..
 chroot image /bin/bash -c "pacman-key --init"
 chroot image /bin/bash -c "pacman-key --populate archlinux"
 
-# the mkosi-created image has all pacman mirrors deactivated. need to activate mirrors for pacman to work
+# the archlinux-bootstrap data has all pacman mirrors deactivated. need to activate mirrors for pacman to work
+# can consider using reflector here?
 chroot image /bin/bash -c "sed -i 's/^#Server/Server/' /etc/pacman.d/mirrorlist"
 
 # comment the line "CheckSpace" in pacman.conf
