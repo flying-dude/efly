@@ -142,22 +142,22 @@ chroot(chroot_fs, ["pacman-key", "--init"])
 chroot(chroot_fs, ["pacman-key", "--populate"])
 
 # copy user-defined filesystem data
-mkosi_extra = img_dir / "mkosi.extra"
+mkosi_extra = img_dir / "extra"
 if mkosi_extra.is_dir():
     sudo(["cp", "--recursive", "--no-target-directory", mkosi_extra, chroot_fs])
 
 # execute image customization script, if it exists
-mkosi_postinst = img_dir / "mkosi.postinst"
+mkosi_postinst = img_dir / "postinst"
 if mkosi_postinst.is_file():
     # copy files
     sudo(["cp", mkosi_postinst, chroot_fs])
-    sudo(["chmod", "+x", chroot_fs / "mkosi.postinst"])
+    sudo(["chmod", "+x", chroot_fs / "postinst"])
 
     # exec postinst inside chroot
-    chroot(chroot_fs, ["/mkosi.postinst"])
+    chroot(chroot_fs, ["/postinst"])
 
     # cleanup files
-    sudo(["rm", chroot_fs / "mkosi.postinst"])
+    sudo(["rm", chroot_fs / "postinst"])
 
 # calculate size of boot partition
 import math

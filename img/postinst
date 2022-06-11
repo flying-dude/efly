@@ -7,7 +7,7 @@ locale-gen
 
 # create user "efly" with groups suggested in arch wiki:
 # https://wiki.archlinux.org/title/users_and_groups#User_groups
-# note: not creating home. it already exists in "mkosi.extra/" and "/etc/skel" has already been copied.
+# note: not creating home. it already exists in "img/extra/" and "/etc/skel" has already been copied.
 useradd --no-create-home --groups adm,ftp,games,http,log,rfkill,sys,systemd-journal,uucp,wheel efly
 
 # mkosi will give ownership of efly user files to root, which we are going to fix here.
