@@ -1,6 +1,6 @@
 [Unit]
 Description=Expand the writable root partition to full size at boot.
-Before=multi-user.target
+Before=multi-user.target getty@tty1.service reflector.service NetworkManager.service
 
 [Service]
 # oneshot services:
