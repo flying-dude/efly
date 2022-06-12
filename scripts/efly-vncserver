@@ -1,5 +1,8 @@
 #!/usr/bin/perl
-#
+
+# This file is included in the efly project.
+# Upstream: https://github.com/TigerVNC/tigervnc/blob/master/unix/vncserver/vncserver.in
+
 #  Copyright (C) 2009-2010 D. R. Commander.  All Rights Reserved.
 #  Copyright (C) 2005-2006 Sun Microsystems, Inc.  All Rights Reserved.
 #  Copyright (C) 2002-2003 Constantin Kaplinsky.  All Rights Reserved.
@@ -258,7 +261,8 @@ if ((!$securityTypeArgSpecified || $vncAuthEnabled) && !$passwordArgSpecified) {
     ($z,$z,$mode) = stat("$vncUserDir/passwd");
     if (!(-e "$vncUserDir/passwd") || ($mode & 077)) {
         warn "\nYou will require a password to access your desktops.\n\n";
-        system($exedir."vncpasswd -q $vncUserDir/passwd");
+        #system($exedir."vncpasswd -q $vncUserDir/passwd");
+        system("/usr/bin/vncpasswd -q $vncUserDir/passwd");
         if (($? >> 8) != 0) {
             exit 1;
         }
@@ -296,7 +300,8 @@ close(XAUTH);
 # Now start the X VNC Server
 
 # We build up our Xvnc command with options
-$cmd = $exedir."Xvnc :$displayNumber";
+#$cmd = $exedir."Xvnc :$displayNumber";
+$cmd = "/usr/bin/Xvnc :$displayNumber";
 
 foreach my $k (sort keys %config) {
   $cmd .= " -$k $config{$k}";
@@ -836,7 +841,8 @@ sub SanityCheck
     }
     else {
       cmd3:
-	foreach $cmd ($exedir."Xvnc",$exedir."vncpasswd") {
+	#foreach $cmd ($exedir."Xvnc",$exedir."vncpasswd") {
+	foreach $cmd ("/usr/bin/Xvnc","/usr/bin/vncpasswd") {
 	    for (split(/:/,$ENV{PATH})) {
 		if (-x "$cmd") {
 		    next cmd3;
