@@ -41,7 +41,7 @@ chroot image /bin/bash -c "sed -i 's/^CheckSpace/#CheckSpace/' /etc/pacman.conf"
 
 # install packages
 chroot image /bin/bash -c "pacman --sync --refresh --refresh --sysupgrade --sysupgrade --noconfirm"
-chroot image /bin/bash -c "pacman --sync --noconfirm sudo python-docopt dosfstools e2fsprogs squashfs-tools gptfdisk"
+chroot image /bin/bash -c "pacman --sync --noconfirm sudo dosfstools e2fsprogs squashfs-tools gptfdisk"
 
 # copy data into chroot and create the img file
 cp --recursive scripts/ image/
