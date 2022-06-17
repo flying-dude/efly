@@ -1,7 +1,7 @@
 Create a bootable raw disk image with persistent storage (read further below on how to increase storage capacity):
 
 ```
-sudo pacman --sync python-docopt dosfstools e2fsprogs squashfs-tools gptfdisk
+sudo pacman --sync dosfstools e2fsprogs squashfs-tools gptfdisk
 git clone https://github.com/flying-dude/efly
 cd efly
 ./scripts/efly-img

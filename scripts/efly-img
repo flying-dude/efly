@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-"""
+usage = """
 Create raw disk images for live systems bootable from a USB flash drive.
 The live system has persistent storage and will retain changes after reboots.
 
@@ -8,11 +8,10 @@ Usage: efly-img [options]
 
 Options:
   -h --help                  Show this screen.
+  --efi-size <size>          Choose a value for the size of EFI boot partition.
+                             (unit in K, M or G - example: 128M)
   -v --version               Show version.
-"""
-
-from docopt import docopt # https://github.com/docopt/
-arguments = docopt(__doc__, version='efly-img 0.0.1')
+""".lstrip().rstrip()
 
 import os, subprocess, atexit
 from pathlib import Path
@@ -20,20 +19,20 @@ from pathlib import Path
 script_dir = os.path.dirname(os.path.realpath(__file__))
 script_dir = Path(script_dir)
 
+# check for required shell commands
 from shutil import which
 missing_pkg = False
-def cmd2pkg(cmd, pkg):
-    global missing_pkg
+cmd2pkg = [
+    ("arch-chroot", "arch-install-scripts"),
+    ("mkfs.vfat", "dosfstools"),
+    ("mkfs.ext4", "e2fsprogs"),
+    ("pacstrap", "arch-install-scripts"),
+    ("sgdisk", "gptfdisk"),
+    ("sudo", "sudo")]
+for cmd, pkg in cmd2pkg:
     if which(cmd) is None:
         print(f"error. missing command '{cmd}'. if running arch linux, install with: pacman --sync {pkg}")
         missing_pkg = True
-
-# check for required shell commands
-cmd2pkg("sudo", "sudo")
-cmd2pkg("mkfs.vfat", "dosfstools")
-cmd2pkg("mkfs.ext4", "e2fsprogs")
-cmd2pkg("sgdisk", "gptfdisk")
-
 if missing_pkg:
     print("exiting due to missing shell command.")
     exit(1)

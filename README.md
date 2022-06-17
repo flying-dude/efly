@@ -12,7 +12,7 @@ est/efly-live.img">img</a></b>
 </p>
 
 ```
-sudo pacman --sync python-docopt dosfstools e2fsprogs squashfs-tools gptfdisk
+sudo pacman --sync dosfstools e2fsprogs squashfs-tools gptfdisk
 git clone https://github.com/flying-dude/efly
 cd efly
 ./scripts/efly-img
