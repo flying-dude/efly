@@ -1,27 +1,94 @@
 #!/usr/bin/python
 
-usage = """
+version = "0.0.3"
+usage = f"""
 Create raw disk images for live systems bootable from a USB flash drive.
 The live system has persistent storage and will retain changes after reboots.
 
 Usage: efly-img [options]
+Version: {version}
 
-Options:
+General Options:
   -h --help                  Show this screen.
-  --efi-size <size>          Choose a value for the size of EFI boot partition.
-                             (unit in K, M or G - example: 128M)
   -v --version               Show version.
+
+Size Options:                Unit in M, G or T (KiB, MiB, GiB, TiB resp.) - Example: 128M
+  --efi-size <size>          Set size of the EFI boot partition.
+  --overlay-size <size>      Set initial size of overlay partition. Will still auto-expand on first boot.
 """.lstrip().rstrip()
 
-import os, subprocess, atexit
+import os, subprocess, atexit, sys, re, math
 from pathlib import Path
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 script_dir = Path(script_dir)
 
-# check for required shell commands
-from shutil import which
-missing_pkg = False
+def info(msg):
+    print(f"[info] {msg}")
+
+def error(msg):
+    print(f"[error] {msg}")
+
+# https://stackoverflow.com/questions/33341000/extract-numbers-and-size-information-kb-mb-etc-from-a-string-in-python
+size_regex = re.compile(r'(\d+(?:\.\d+)?)\s*([bkmgtp]?)', re.IGNORECASE)
+size_order = ['b', 'k', 'm', 'g', 't', 'p']
+def parse_size(size_string): # parse size string and return size in bytes
+    match = size_regex.findall(size_string)
+    if not match:
+            raise Exception(f'invalid size: "{size_string}"')
+    value, unit = match[0]
+    unit = unit if unit else "b" # unit is optional. default is byte.
+    return int(float(value) * (1024**size_order.index(unit.lower())))
+
+# parse cli
+cli_efi_size_M = -1
+cli_overlay_size_M = -1
+args = sys.argv[1:]
+while args and args[0].startswith("-"):
+    if args[0] == "-v" or args[0] == "--version":
+        print(version)
+        exit(0)
+
+    if args[0] == "-h" or args[0] == "--help":
+        print(usage)
+        exit(0)
+
+    if args[0] == "--efi-size":
+        if len(args) < 2:
+            error('missing argument for cli flag "--efi-size".')
+            exit(1)
+
+        try:
+            cli_efi_size_B = parse_size(args[1])
+            cli_efi_size_M = math.ceil(cli_efi_size_B / 1024 / 1024)
+            info(f'will use at least {cli_efi_size_M}MiB for EFI boot partition')
+        except Exception as e:
+            error(f'invalid efi size: "{args[1]}"')
+            exit(1)
+
+        args = args[2:]
+        continue
+
+    if args[0] == "--overlay-size":
+        if len(args) < 2:
+            error('missing argument for cli flag "--overlay-size".')
+            exit(1)
+
+        try:
+            cli_overlay_size_B = parse_size(args[1])
+            cli_overlay_size_M = math.ceil(cli_overlay_size_B / 1024 / 1024)
+            info(f'will use at least {cli_overlay_size_M}MiB for overlay partition')
+        except Exception as e:
+            error(f'invalid overlay size: "{args[1]}"')
+            exit(1)
+
+        args = args[2:]
+        continue
+
+    error(f'unknown cli flag: "{args[0]}"')
+    exit(1)
+
+# list of required shell commands together with their corresponding packages
 cmd2pkg = [
     ("arch-chroot", "arch-install-scripts"),
     ("mkfs.vfat", "dosfstools"),
@@ -29,24 +96,30 @@ cmd2pkg = [
     ("pacstrap", "arch-install-scripts"),
     ("sgdisk", "gptfdisk"),
     ("sudo", "sudo")]
+
+# check for presence of required shell commands
+from shutil import which
+missing_pkg = False
 for cmd, pkg in cmd2pkg:
     if which(cmd) is None:
-        print(f"error. missing command '{cmd}'. if running arch linux, install with: pacman --sync {pkg}")
+        error(f"missing shell command '{cmd}'. if running arch linux, install with: pacman --sync {pkg}")
         missing_pkg = True
+
+# abort if we are missing some shell commands
 if missing_pkg:
-    print("exiting due to missing shell command.")
+    error("exiting due to missing shell command.")
     exit(1)
 
 # check if config dir is present
 img_dir = script_dir.parent / "img"
 if not img_dir.is_dir():
-    print(f"error. config folder not present: {img_dir}")
+    error(f"config folder not present: {img_dir}")
     exit(1)
 
 # check for presence of package list
 package_txt = img_dir / "packages.txt"
 if not package_txt.is_file():
-    print(f"error. package file not found: {packages_txt}")
+    error(f"package file not found: {packages_txt}")
     exit(1)
 
 # read and parse list of packages
@@ -97,9 +170,6 @@ def get(args):
 def du(path):
     return int(get(['sudo', 'du','--summarize', '--bytes', path]).split()[0])
 
-def info(msg):
-    print(f"[info] {msg}")
-
 # place all new data inside "out/" folder
 out_dir = img_dir / "out"
 out_dir.mkdir(exist_ok=True)
@@ -124,7 +194,7 @@ sudo(["mount", grub_tmp, chroot_boot])
 # run pacstrap
 pacstrap_result = sudo(["pacstrap", "-cGM", chroot_fs] + packages)
 if not pacstrap_result.returncode == 0:
-    print(f"error. pacstrap returned non-zero: {pacstrap_result.returncode}")
+    error(f"pacstrap returned non-zero: {pacstrap_result.returncode}")
     exit(1)
 
 # obtain "month-year" for bootloader id
@@ -159,11 +229,11 @@ if mkosi_postinst.is_file():
     sudo(["rm", chroot_fs / "postinst"])
 
 # calculate size of boot partition
-import math
 boot_size_B = du(chroot_fs / "boot")
 boot_size_M = boot_size_B / 1024 / 1024
 boot_size_M = math.ceil(boot_size_M)
 boot_size_M = boot_size_M + 2 # two extra MiB for boot partition. for file system metadata etc.
+boot_size_M = max(boot_size_M, cli_efi_size_M)
 print(f"/boot size: {boot_size_M}M")
 
 # going to create squashfs now. need to exclude data of boot partition from that
@@ -188,8 +258,11 @@ sfs_size_M = sfs_size_B / 1024 / 1024
 sfs_size_M = math.ceil(sfs_size_M)
 print(f"sfs size: {sfs_size_M}M")
 
-ext4_size_M = 4 # initial size for ext4  on the image. will expand to full size of USB stick on first boot.
-gpt_size_M = 1 # GUID partition table takes 1MiB
+# initial size for ext4  on the image. will expand to full size of USB stick on first boot.
+ext4_size_M = max(4, cli_overlay_size_M)
+
+# GUID partition table takes 1MiB
+gpt_size_M = 1
 
 # need +1 extra M for some reason here; otherwise the 3rd partition won't fit
 s(f"truncate --size={gpt_size_M + boot_size_M + sfs_size_M + ext4_size_M + 1}M efly-live.img")
