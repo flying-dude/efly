@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # exit when any command fails
-set -e
+set -ex
 
 echo user: $(whoami)
 echo groups: $(groups)
@@ -41,11 +41,11 @@ chroot image /bin/bash -c "sed -i 's/^CheckSpace/#CheckSpace/' /etc/pacman.conf"
 
 # install packages
 chroot image /bin/bash -c "pacman --sync --refresh --refresh --sysupgrade --sysupgrade --noconfirm"
-chroot image /bin/bash -c "pacman --sync --noconfirm sudo dosfstools e2fsprogs squashfs-tools gptfdisk"
+chroot image /bin/bash -c "pacman --sync --noconfirm sudo dosfstools e2fsprogs squashfs-tools gptfdisk python"
 
 # copy data into chroot and create the img file
 cp src/efly/efly-img image/
-cp --recursive img/ image/
+cp --recursive data/img/ image/
 chroot image /bin/bash -c "/efly-img"
 mv image/out/efly-live.img .
 
