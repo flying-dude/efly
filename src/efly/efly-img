@@ -181,28 +181,39 @@ with open(package_txt) as lines:
                 continue
             packages.append(pkg)
 
-def r(args, cwd=None):
-    log(light_cyan("exec"), ' '.join(str(arg) for arg in args))
-    return subprocess.run(args, cwd=cwd)
+exiting = False
+def r(args, ignore_error=False, **kwargs):
+    global exiting
+    cmd = ' '.join(str(arg) for arg in args)
+    log(light_cyan("exec"), cmd)
 
-def sudo(args, cwd=None):
-        return r(["sudo"] + args, cwd=cwd)
+    returncode = subprocess.run(args, **kwargs).returncode
+    if not returncode == 0 and not ignore_error:
+        error(f'command failed: {red(cmd)}')
 
-def chroot(path, args, cwd=None):
-    sudo(["arch-chroot", path] + args, cwd=cwd)
+        # exit on error. but don't call exit again, if we are already exiting (this could happen, if we have another error during cleanup).
+        if not exiting:
+            exiting = True
+            exit(1)
+
+def sudo(args, **kwargs):
+        return r(["sudo"] + args, **kwargs)
+
+def chroot(path, args, **kwargs):
+    sudo(["arch-chroot", path] + args, **kwargs)
 
     # lazy umount /dev broke my system, for some reason, when using regular chroot with manual mounts.
     # arch-chroot seems to umount /dev correctly but sometimes fails to umount /proc (it simply stays active after arch-chroot).
     # however, we can manually "umount --lazy /proc" without breaking our system. so we do just that.
-    sudo(["umount", "--lazy", "--quiet", path / "proc"], cwd=cwd)
+    sudo(["umount", "--lazy", "--quiet", path / "proc"], ignore_error=True, **kwargs)
 
-def get(args, cwd=None):
+def get(args, **kwargs):
     log(light_cyan("get"), ' '.join(str(arg) for arg in args))
-    return subprocess.check_output(args, cwd=cwd).decode('utf-8').rstrip()
+    return subprocess.check_output(args, **kwargs).decode('utf-8').rstrip()
 
 # obtain disk usage in bytes
-def du(path, cwd=None):
-    return int(get(['sudo', 'du','--summarize', '--bytes', path], cwd=cwd).split()[0])
+def du(path, **kwargs):
+    return int(get(['sudo', 'du','--summarize', '--bytes', path], **kwargs).split()[0])
 
 # create output directory
 # TODO error handling in case creating dir fails
@@ -226,13 +237,10 @@ sudo(["mkdir", chroot_boot])
 # mount grub image file. this needs to be unmounted before program exit.
 # but we do safety "--quiet" umount in case of premature program exit (aka "error").
 sudo(["mount", grub_tmp, chroot_boot])
-atexit.register(sudo, ["umount", "--lazy", "--quiet", chroot_boot])
+atexit.register(sudo, ["umount", "--lazy", "--quiet", chroot_boot], ignore_error=True)
 
 # run pacstrap
 pacstrap_result = sudo(["pacstrap", "-cGM", chroot_fs] + packages)
-if not pacstrap_result.returncode == 0:
-    error(f"pacstrap returned non-zero: {pacstrap_result.returncode}")
-    exit(1)
 
 # obtain "month-year" for bootloader id
 import datetime
@@ -378,5 +386,4 @@ chroot(root, [
 # copy grub config
 sudo(["cp", profile_dir / "grub.cfg", boot / "grub"])
 
-print()
 info("Running cleanup code before program exit.")
