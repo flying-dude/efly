@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # exit when any command fails
-set -e
+set -ex
 
 echo user: $(whoami)
 echo groups: $(groups)
