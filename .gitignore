@@ -1,6 +1,5 @@
-# exclude mkarchiso output
+# exclude mkarchiso work dir
 /work
-/out
 
-# exclude data created by efly-img
-/img/out/
+# exclude default output dir for mkarchiso and efly-img
+out

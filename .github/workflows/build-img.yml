@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Build IMG File
         run: |
-          sudo bash ci/build-img.sh
+          sudo bash src/ci/build-img.sh
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
