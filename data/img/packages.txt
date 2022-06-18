@@ -110,7 +110,6 @@ mkinitcpio-archiso
 mkinitcpio-nfs-utils
 modemmanager
 mtools
-nano
 nbd
 ndisc6
 nfs-utils

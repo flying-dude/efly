@@ -44,10 +44,10 @@ chroot image /bin/bash -c "pacman --sync --refresh --refresh --sysupgrade --sysu
 chroot image /bin/bash -c "pacman --sync --noconfirm sudo dosfstools e2fsprogs squashfs-tools gptfdisk"
 
 # copy data into chroot and create the img file
-cp --recursive scripts/ image/
+cp src/efly/efly-img image/
 cp --recursive img/ image/
-chroot image /bin/bash -c "/scripts/efly-img"
-mv image/img/out/efly-live.img .
+chroot image /bin/bash -c "/efly-img"
+mv image/out/efly-live.img .
 
 # unmount previously mounted special directories
 #umount --lazy image/proc

@@ -44,7 +44,7 @@ chroot image /bin/bash -c "pacman --sync --refresh --refresh --sysupgrade --sysu
 chroot image /bin/bash -c "pacman --sync --noconfirm archiso"
 
 # create the iso file
-cp --recursive iso/ image/ # copy archiso config into chroot
+cp --recursive data/iso/ image/ # copy archiso config into chroot
 chroot image /bin/bash -c "mkarchiso -v /iso" # image/out/efly-live-2022.05.13-x86_64.iso
 mv image/out/*.iso efly-live.iso
 
