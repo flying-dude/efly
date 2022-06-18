@@ -12,7 +12,7 @@ ls -hla
 echo
 
 wget --no-verbose http://ftp.snt.utwente.nl/pub/os/linux/archlinux/iso/2022.05.01/archlinux-bootstrap-2022.05.01-x86_64.tar.gz
-b2sum --check b2sums.txt
+b2sum --check data/b2sums.txt
 
 tar xzf archlinux-bootstrap-*-x86_64.tar.gz --numeric-owner
 mv root.x86_64 image

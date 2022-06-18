@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Build ISO File
         run: |
-          sudo bash scripts/build-iso.sh
+          sudo bash ci/build-iso.sh
       - name: Release
         uses: softprops/action-gh-release@v1
         with:

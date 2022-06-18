@@ -1,0 +1,33 @@
+#!/usr/bin/python
+
+version = "0.0.3"
+usage = f"""
+Usage: efly [subcommand] *subcommand-options*
+Version: {version}
+
+Multi-Command for creating and managing bootable disk images.
+
+Subcommands:
+  efly img       :: Create a bootable raw disk image.
+  efly qemu      :: Boot a disk image using qemu.
+  efly vncserver :: Launch a VNC server using TigerVNC.
+""".lstrip().rstrip()
+
+import os, sys, subprocess
+from pathlib import Path
+
+script_dir = Path(os.path.dirname(os.path.realpath(__file__)))
+
+# print usage and exit on empty input
+if len(sys.argv) == 1 or sys.argv[1] == "-h" or sys.argv[1] == "--help":
+    print(usage)
+    exit(0)
+
+cmd = sys.argv[1]
+args = sys.argv[2:]
+if cmd == "img" or cmd == "qemu" or cmd == "vncserver":
+    completed_process = subprocess.run([script_dir / f"efly-{cmd}"] + args)
+    exit(completed_process.returncode)
+else:
+    print(f'[error] unknown subcommand "cmd". run "efly --help" to see available subcommands.')
+    exit(1)
