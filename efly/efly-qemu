@@ -19,13 +19,13 @@
 set -eu
 
 # Set application name from the script's file name
-app_name="${0##*/}"
+#app_name="${0##*/}"
+app_name="efly qemu"
 
 print_help() {
     local usagetext
     IFS='' read -r -d '' usagetext <<EOF || true
-Usage:
-    ${app_name} [options] <image> -- [qemu-options]
+Usage: ${app_name} [options] <image> -- [qemu-options]
 
 Boot a disk image using qemu. Predefines a number of useful options.
 Works for both iso images and raw disk images.

@@ -20,4 +20,4 @@ truncate --size=10G img/out/efly-live.img
 ./scripts/efly-qemu --uefi img/out/efly-live.img
 ```
 
-![Efly Linux Live](screenshot.png)
+![Efly Linux Live](data/screenshot.png)
