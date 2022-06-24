@@ -11,6 +11,9 @@ General Options:
   --out <out-dir>            Choose output directory instead of out/ inside current working directory.
   --profile <profile-dir>    Use a custom profile instead of default profile.
 
+  --shell                    Launch an interactive shell after running the postinst script.
+                             Useful for doing some manual tweaking or for debuggung.
+
 Size Options:                Unit in M, G or T (KiB, MiB, GiB, TiB resp.) - Example: 128M
   --efi-size <size>          Set size of the EFI boot partition.
   --overlay-size <size>      Set initial size of overlay partition. Will still auto-expand on first boot.
@@ -67,6 +70,7 @@ def parse_size(size_string): # parse size string and return size in bytes
 # parse cli
 cli_efi_size_M = -1
 cli_overlay_size_M = -1
+flag_shell = False
 args = sys.argv[1:]
 while args and args[0].startswith("-"):
     if args[0] == "-v" or args[0] == "--version":
@@ -126,6 +130,11 @@ while args and args[0].startswith("-"):
             out_dir = Path(args[1])
             args = args[2:]
             continue
+
+    if args[0] == "--shell":
+        flag_shell = True
+        args = args[2:]
+        continue
 
     error(f'unknown cli flag: "{args[0]}"')
     exit(1)
@@ -240,7 +249,7 @@ sudo(["mount", grub_tmp, chroot_boot])
 atexit.register(sudo, ["umount", "--lazy", "--quiet", chroot_boot], ignore_error=True)
 
 # run pacstrap
-pacstrap_result = sudo(["pacstrap", "-cGM", chroot_fs] + packages)
+sudo(["pacstrap", "-cGM", chroot_fs] + packages)
 
 # obtain "month-year" for bootloader id
 import datetime
@@ -280,6 +289,18 @@ if postinst_script.is_file():
 
     # cleanup files
     sudo(["rm", chroot_fs / "postinst"])
+
+# hop into a shell, if requested by the user
+if flag_shell:
+    if (chroot_fs / "bin" / "fish").is_file():
+        chroot(chroot_fs, ["/bin/fish"])
+    elif (chroot_fs / "bin" / "bash").is_file():
+        chroot(chroot_fs, ["/bin/bash"])
+    elif (chroot_fs / "bin" / "sh").is_file():
+        chroot(chroot_fs, ["/bin/sh"])
+    else:
+        error('cli flag "--shell" was specified but could not find a shell at /bin/fish, /bin/bash or /bin/sh')
+        exit(1)
 
 # calculate size of boot partition
 boot_size_B = du(chroot_fs / "boot")
