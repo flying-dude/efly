@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-version = "$$UNKNOWN_VERSION$$"
+version = "UNKNOWN_VERSION"
 usage = f"""
 Usage: efly [subcommand] *subcommand-options*
 Version: {version}
