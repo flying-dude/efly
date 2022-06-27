@@ -4,7 +4,7 @@ usage = f"""
 Usage: efly img [options]
 
 Create raw disk images for live systems bootable from a USB flash drive.
-The live system has persistent storage and will retain changes after reboots.
+The live system has persistent storage and will retain changes among reboots.
 
 General Options:
   -h --help                  Show this screen.

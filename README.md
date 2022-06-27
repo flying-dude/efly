@@ -1,3 +1,5 @@
+**[Docs](docs/README.md) - [Packages](https://github.com/flying-dude/curated-aur)**
+
 A graphical live system based on Arch Linux.
 Suitable for installing Arch Linux or as a rescue system for computers without a working operating system.
 How to [flash](docs/flash.md) a USB stick?
@@ -12,7 +14,7 @@ est/efly-live.img">img</a></b>
 </p>
 
 ```
-sudo pacman --sync dosfstools e2fsprogs squashfs-tools gptfdisk
+sudo pacman --sync python-colorama dosfstools e2fsprogs squashfs-tools gptfdisk
 git clone https://github.com/flying-dude/efly
 cd efly
 ./src/efly/efly-img # create a bootable raw disk image
