@@ -15,9 +15,9 @@ est/efly-live.img">img</a></b>
 sudo pacman --sync dosfstools e2fsprogs squashfs-tools gptfdisk
 git clone https://github.com/flying-dude/efly
 cd efly
-./scripts/efly-img
-truncate --size=10G img/out/efly-live.img
-./scripts/efly-qemu --uefi img/out/efly-live.img
+./src/efly/efly-img # create a bootable raw disk image
+truncate --size=10G out/efly-live.img
+./src/efly/efly-qemu --uefi out/efly-live.img
 ```
 
 ![Efly Linux Live](data/screenshot.png)
