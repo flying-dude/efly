@@ -293,7 +293,7 @@ if postinst_script.is_file():
 # hop into a shell, if requested by the user
 if flag_shell:
     if (chroot_fs / "bin" / "fish").is_file():
-        chroot(chroot_fs, ["/bin/fish"])
+        chroot(chroot_fs, ["/bin/fish", "--private"]) # launch fish but do not store any history
     elif (chroot_fs / "bin" / "bash").is_file():
         chroot(chroot_fs, ["/bin/bash"])
     elif (chroot_fs / "bin" / "sh").is_file():

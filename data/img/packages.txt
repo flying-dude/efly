@@ -42,6 +42,10 @@ net-tools
 # contains "growpart" util for resizing partitions
 cloud-guest-utils
 
+# required for ymerge package manager
+base-devel fmt git # runtime dependencies
+cmake nlohmann-json ninja # extra build dependencies
+
 # packages from arch linux releng config
 alsa-utils
 amd-ucode

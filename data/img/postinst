@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -ex
+
 # configure and generate locale
 echo "LANG=en_US.UTF-8" > /etc/locale.conf
 echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
@@ -22,3 +24,10 @@ mkinitcpio --allpresets
 systemctl enable NetworkManager.service
 systemctl enable reflector.service
 systemctl enable boot-growfs.service
+
+# install ymerge package manager
+chown --recursive efly:efly /ymerge-PKGBUILD/
+cd /ymerge-PKGBUILD/
+sudo --user=efly makepkg -sri --noconfirm
+cd /
+rm -rf /ymerge-PKGBUILD/
