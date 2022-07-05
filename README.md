@@ -14,12 +14,10 @@ est/efly-live.img">img</a></b>
 </p>
 
 ```
-sudo pacman --sync python-colorama dosfstools e2fsprogs squashfs-tools gptfdisk
-git clone https://github.com/flying-dude/efly
-cd efly
-./src/efly/efly-img # create a bootable raw disk image
-truncate --size=10G out/efly-live.img
-./src/efly/efly-qemu --uefi out/efly-live.img
+wget https://raw.githubusercontent.com/flying-dude/curated-aur/main/pkg/efly/PKGBUILD
+makepkg --syncdeps --install
+efly img --overlay-size 10G # create a bootable disk image
+efly qemu --uefi out/efly-live.img
 ```
 
 ![Efly Linux Live](data/screenshot.png)

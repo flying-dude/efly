@@ -23,21 +23,23 @@ Size Options:                Unit in M, G or T (KiB, MiB, GiB, TiB resp.) - Exam
   --overlay-size <size>      Set initial size of overlay partition. Will still auto-expand on first boot.
 ```
 
-You can simply clone the git repository to obtain the cli tool:
+## Install the Disk Image Tool
+
+To obtain the efly command-line tool, you can use the available [PKGBUILD](https://github.com/flying-dude/curated-aur/blob/main/pkg/efly/PKGBUILD):
+
+```
+wget https://raw.githubusercontent.com/flying-dude/curated-aur/main/pkg/efly/PKGBUILD
+makepkg --syncdeps --install
+efly --help
+```
+
+Alternatively, you can simply clone the git repository:
 
 ```
 sudo pacman --sync python-colorama dosfstools e2fsprogs squashfs-tools gptfdisk
 git clone https://github.com/flying-dude/efly
 cd efly/src/efly
 ./efly --help
-```
-
-Alternatively, you can use the [PKGBUILD](https://github.com/flying-dude/curated-aur/blob/main/pkg/efly/PKGBUILD) for a sytem-wide install of the latest release:
-
-```
-wget https://raw.githubusercontent.com/flying-dude/curated-aur/main/pkg/efly/PKGBUILD
-makepkg -si
-efly --help
 ```
 
 ## Packaging
