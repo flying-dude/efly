@@ -197,24 +197,31 @@ def r(args, ignore_error=False, **kwargs):
     log(light_cyan("exec"), cmd)
 
     returncode = subprocess.run(args, **kwargs).returncode
-    if not returncode == 0 and not ignore_error:
+    if not result.returncode == 0 and not ignore_error:
         error(f'command failed: {red(cmd)}')
 
         # exit on error. but don't call exit again, if we are already exiting (this could happen, if we have another error during cleanup).
         if not exiting:
             exiting = True
             exit(1)
+    else:
+        return returncode
 
 def sudo(args, **kwargs):
         return r(["sudo"] + args, **kwargs)
 
 def chroot(path, args, **kwargs):
-    sudo(["arch-chroot", path] + args, **kwargs)
+    returncode = sudo(["arch-chroot", path] + args, **kwargs)
 
-    # lazy umount /dev broke my system, for some reason, when using regular chroot with manual mounts.
-    # arch-chroot seems to umount /dev correctly but sometimes fails to umount /proc (it simply stays active after arch-chroot).
-    # however, we can manually "umount --lazy /proc" without breaking our system. so we do just that.
+    # do a safety lazy umount:
+    # umount after chroot often does not go smoothly/reliably. try lazy umount here to umount stuff that is still mounted.
+    # umount will error, in case path in question has already been umounted successfully.
+    # this is actually what we want anyway, so not really an error. therefore, we can ignore umount error here.
+    sudo(["umount", "--lazy", "--quiet", path / "dev"], ignore_error=True, **kwargs)
     sudo(["umount", "--lazy", "--quiet", path / "proc"], ignore_error=True, **kwargs)
+    sudo(["umount", "--lazy", "--quiet", path / "sys"], ignore_error=True, **kwargs)
+
+    return returncode
 
 def get(args, **kwargs):
     log(light_cyan("get"), ' '.join(str(arg) for arg in args))
