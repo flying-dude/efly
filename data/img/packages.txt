@@ -1,12 +1,16 @@
 # window manager stuff
-xorg-server xorg-xinit xfce4
+xorg-server
+xorg-xinit
+xfce4
 
 # audio stuff
 xfce4-pulseaudio-plugin
-pulseaudio pulseaudio-alsa
+pulseaudio
+pulseaudio-alsa
 pavucontrol
 
-fish # the shell that we use
+# the shell that we use
+fish
 
 # cli editors
 nano
@@ -37,7 +41,8 @@ tigervnc
 xterm
 
 # wireless config: https://wiki.archlinux.org/title/NetworkManager
-networkmanager network-manager-applet
+networkmanager
+network-manager-applet
 
 # obtain the "ifconfig" command
 net-tools
@@ -45,9 +50,8 @@ net-tools
 # contains "growpart" util for resizing partitions
 cloud-guest-utils
 
-# required for ymerge package manager
-base-devel fmt git # runtime dependencies
-cmake nlohmann-json ninja # extra build dependencies
+# facilitates install PKGBUILDS in postinst script
+base-devel
 
 # packages from arch linux releng config
 alsa-utils
