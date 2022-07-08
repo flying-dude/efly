@@ -211,10 +211,13 @@ def sudo(args, **kwargs):
 def chroot(path, args, **kwargs):
     sudo(["arch-chroot", path] + args, **kwargs)
 
-    # lazy umount /dev broke my system, for some reason, when using regular chroot with manual mounts.
-    # arch-chroot seems to umount /dev correctly but sometimes fails to umount /proc (it simply stays active after arch-chroot).
-    # however, we can manually "umount --lazy /proc" without breaking our system. so we do just that.
+    # do a safety lazy umount:
+    # umount after chroot often does not go smoothly/reliably. try lazy umount here to umount stuff that is still mounted.
+    # umount will error, in case path in question has already been umounted successfully.
+    # this is actually what we want anyway, so not really an error. therefore, we can ignore umount error here.
+    sudo(["umount", "--lazy", "--quiet", path / "dev"], ignore_error=True, **kwargs)
     sudo(["umount", "--lazy", "--quiet", path / "proc"], ignore_error=True, **kwargs)
+    sudo(["umount", "--lazy", "--quiet", path / "sys"], ignore_error=True, **kwargs)
 
 def get(args, **kwargs):
     log(light_cyan("get"), ' '.join(str(arg) for arg in args))
