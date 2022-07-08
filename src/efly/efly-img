@@ -197,7 +197,7 @@ def r(args, ignore_error=False, **kwargs):
     log(light_cyan("exec"), cmd)
 
     returncode = subprocess.run(args, **kwargs).returncode
-    if not returncode == 0 and not ignore_error:
+    if not result.returncode == 0 and not ignore_error:
         error(f'command failed: {red(cmd)}')
 
         # exit on error. but don't call exit again, if we are already exiting (this could happen, if we have another error during cleanup).
