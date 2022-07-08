@@ -24,7 +24,10 @@ meld
 tk
 
 # misc cli applications
+bat
 htop
+ncdu
+ripgrep
 wget
 
 # web browsing
