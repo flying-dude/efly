@@ -197,19 +197,21 @@ def r(args, ignore_error=False, **kwargs):
     log(light_cyan("exec"), cmd)
 
     returncode = subprocess.run(args, **kwargs).returncode
-    if not returncode == 0 and not ignore_error:
+    if not result.returncode == 0 and not ignore_error:
         error(f'command failed: {red(cmd)}')
 
         # exit on error. but don't call exit again, if we are already exiting (this could happen, if we have another error during cleanup).
         if not exiting:
             exiting = True
             exit(1)
+    else:
+        return returncode
 
 def sudo(args, **kwargs):
         return r(["sudo"] + args, **kwargs)
 
 def chroot(path, args, **kwargs):
-    sudo(["arch-chroot", path] + args, **kwargs)
+    returncode = sudo(["arch-chroot", path] + args, **kwargs)
 
     # do a safety lazy umount:
     # umount after chroot often does not go smoothly/reliably. try lazy umount here to umount stuff that is still mounted.
@@ -218,6 +220,8 @@ def chroot(path, args, **kwargs):
     sudo(["umount", "--lazy", "--quiet", path / "dev"], ignore_error=True, **kwargs)
     sudo(["umount", "--lazy", "--quiet", path / "proc"], ignore_error=True, **kwargs)
     sudo(["umount", "--lazy", "--quiet", path / "sys"], ignore_error=True, **kwargs)
+
+    return returncode
 
 def get(args, **kwargs):
     log(light_cyan("get"), ' '.join(str(arg) for arg in args))
