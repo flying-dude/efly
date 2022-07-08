@@ -50,8 +50,18 @@ net-tools
 # contains "growpart" util for resizing partitions
 cloud-guest-utils
 
-# facilitates install PKGBUILDS in postinst script
+# packages required for building ymerge PKGBUILD
+# version shipped with efly-image: https://github.com/flying-dude/efly/blob/main/data/img/extra/ymerge-PKGBUILD/PKGBUILD
+# latest version: https://github.com/flying-dude/curated-aur/blob/main/pkg/ymerge/PKGBUILD
 base-devel
+fmt
+git
+abseil-cpp
+cmake
+fmt
+nlohmann-json
+ninja
+gtest
 
 # packages from arch linux releng config
 alsa-utils
