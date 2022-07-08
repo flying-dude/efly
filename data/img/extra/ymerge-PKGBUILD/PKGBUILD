@@ -1,14 +1,14 @@
 # SPDX-License-Identifier: BSD-2-Clause
 
 pkgname=ymerge
-pkgver="0.0.2"
-pkgrel=2
+pkgver="0.0.1"
+pkgrel=1
 pkgdesc="A Source-Based Package Manager for Arch Linux."
 arch=(x86_64)
 url="https://github.com/flying-dude/ymerge/"
 license=(BSD)
-depends=(fmt git)
-makedepends=(cmake fmt nlohmann-json ninja)
+depends=(fmt git abseil-cpp)
+makedepends=(cmake fmt nlohmann-json ninja gtest)
 provides=(ymerge)
 
 source=(
@@ -16,10 +16,8 @@ source=(
     "https://github.com/Jorengarenar/libXDGdirs/archive/84ab4117b787c4079965c98b4578a38b63795cc0.zip"
 )
 
-b2sums=(
-    "cefe004f1de15906bdadcceb5d4137e990f3ec20ea4bbeb544f997d68bcd078a7b34454b84fe64b41cbec99371673d93225ba0a2f89cc02a7185519490ea1b4a"
-    "816f464b468ce668cb3bf4e869e683c045a8083ec43f020df2096189a408890e41b3ec7a26b72f06cf16ed31883228f810385968162baa5c87b61cdbe37004ff"
-)
+b2sums=('931a2b6f3bfec60c87c5d5be45d9624c0fd944851c38f492a51757d10854cab96e956907f6d0eb88f889dae3d1d49ee3b04903055ad5e83fb8b7356111c0a523'
+        '816f464b468ce668cb3bf4e869e683c045a8083ec43f020df2096189a408890e41b3ec7a26b72f06cf16ed31883228f810385968162baa5c87b61cdbe37004ff')
 
 build() {
     cp --no-target-directory --recursive libXDGdirs-* ymerge-*/src/submodules/libxdgdirs/
@@ -32,4 +30,7 @@ package() {
     cd ymerge-*/build/
     mkdir --parents ${pkgdir}/usr/lib; cp libyoutil.so ${pkgdir}/usr/lib
     mkdir --parents ${pkgdir}/usr/bin; cp ymerge ${pkgdir}/usr/bin
+
+    mkdir --parents ${pkgdir}/usr/lib; cp libauracle.so ${pkgdir}/usr/lib
+    mkdir --parents ${pkgdir}/usr/bin; cp auracle ${pkgdir}/usr/bin
 }
