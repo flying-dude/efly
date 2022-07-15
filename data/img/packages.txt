@@ -1,7 +1,19 @@
-# window manager stuff
+# window manager and desktop environment
 xorg-server
 xorg-xinit
 xfce4
+
+# gvfs this needs to be installed, so that removable devices
+# are shown in xfce and thunar file manager
+gvfs
+gvfs-mtp
+
+# thunar file manager will show "eject" option for removable devices,
+# if the following package is installed. xfce desktop will never provide
+# that option. "eject" means it will unmount and poweroff the removable device,
+# making it safe to remove.
+# see also: https://forum.manjaro.org/t/eject-external-hard-drive-option-gone/61895
+gnome-disk-utility
 
 # audio stuff
 xfce4-pulseaudio-plugin
