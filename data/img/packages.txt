@@ -44,6 +44,11 @@ xterm
 networkmanager
 network-manager-applet
 
+# bluetooth
+bluez
+bluez-utils
+blueman
+
 # obtain the "ifconfig" command
 net-tools
 

@@ -24,6 +24,7 @@ mkinitcpio --allpresets
 systemctl enable NetworkManager.service
 systemctl enable reflector.service
 systemctl enable boot-growfs.service
+systemctl enable bluetooth.service
 
 # install ymerge package manager
 chown --recursive efly:efly /ymerge-PKGBUILD/
