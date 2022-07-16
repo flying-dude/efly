@@ -29,6 +29,6 @@ systemctl enable bluetooth.service
 # install ymerge package manager
 chown --recursive efly:efly /ymerge-PKGBUILD/
 cd /ymerge-PKGBUILD/
-sudo --user=efly makepkg -sri --noconfirm
+sudo --user=efly makepkg --syncdeps --rmdeps --install --noconfirm --needed
 cd /
 rm -rf /ymerge-PKGBUILD/
