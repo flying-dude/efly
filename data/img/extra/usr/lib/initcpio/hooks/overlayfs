@@ -21,7 +21,7 @@ run_latehook() {
 	# uncomment this if you want persistent storage
 	# TODO replace this with UUID or label instead of /dev/sda3
 	# mount /dev/sda3 ${OFS_COWSPACE}
-	mount PARTLABEL="efly-overlay" ${OFS_COWSPACE}
+	mount PARTUUID="XXX__EFLY_OVERLAY_UUID__XXX" ${OFS_COWSPACE}
 
 	[ -d ${OFS_UPPER} ] || mkdir -p ${OFS_UPPER}
 	[ -d ${OFS_WORK} ] || mkdir -p ${OFS_WORK}

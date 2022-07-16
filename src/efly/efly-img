@@ -210,16 +210,29 @@ def r(args, ignore_error=False, **kwargs):
 def sudo(args, **kwargs):
         return r(["sudo"] + args, **kwargs)
 
+# run a command inside chroot. note that we don't pass **kwargs to python subcommand.
+# instead, we use **kwargs here to define environment variables to be used inside chroot. if we were
+# to define **kwargs and pass that verbatim to python subcommand, then env would only be passed to "arch-chroot"
+# but not available inside the actual chroot (which is what we want).
 def chroot(path, args, **kwargs):
-    returncode = sudo(["arch-chroot", path] + args, **kwargs)
+    path = Path(path) # make sure path is an actual Path()
+
+    # assign optional environment variables to command, passed as **kwargs
+    cmd = []
+    for key, value in kwargs.items():
+        print(f"{key}={value}")
+        cmd += [f"{key}={value}"]
+
+    cmd += ["arch-chroot", path] + args
+    returncode = sudo(cmd)
 
     # do a safety lazy umount:
     # umount after chroot often does not go smoothly/reliably. try lazy umount here to umount stuff that is still mounted.
     # umount will error, in case path in question has already been umounted successfully.
     # this is actually what we want anyway, so not really an error. therefore, we can ignore umount error here.
-    sudo(["umount", "--lazy", "--quiet", path / "dev"], ignore_error=True, **kwargs)
-    sudo(["umount", "--lazy", "--quiet", path / "proc"], ignore_error=True, **kwargs)
-    sudo(["umount", "--lazy", "--quiet", path / "sys"], ignore_error=True, **kwargs)
+    sudo(["umount", "--lazy", "--quiet", path / "dev"], ignore_error=True)
+    sudo(["umount", "--lazy", "--quiet", path / "proc"], ignore_error=True)
+    sudo(["umount", "--lazy", "--quiet", path / "sys"], ignore_error=True)
 
     return returncode
 
@@ -279,6 +292,12 @@ chroot(chroot_fs,
 chroot(chroot_fs, ["pacman-key", "--init"])
 chroot(chroot_fs, ["pacman-key", "--populate"])
 
+# generate random uuid for each partition
+import uuid
+boot_uuid = str(uuid.uuid4())
+squash_uuid = str(uuid.uuid4())
+overlay_uuid = str(uuid.uuid4())
+
 # copy user-defined filesystem data
 extra_files = profile_dir / "extra"
 if extra_files.is_dir():
@@ -292,9 +311,12 @@ if postinst_script.is_file():
     sudo(["chmod", "+x", chroot_fs / "postinst"])
 
     # exec postinst inside chroot
-    chroot(chroot_fs, ["/postinst"])
+    chroot(chroot_fs, ["/postinst"],
+        EFLY_BOOT_UUID=boot_uuid,
+        EFLY_SQUASH_UUID=squash_uuid,
+        EFLY_OVERLAY_UUID=overlay_uuid)
 
-    # cleanup files
+    # cleanup postinst file after running it
     sudo(["rm", chroot_fs / "postinst"])
 
 # hop into a shell, if requested by the user
@@ -350,10 +372,14 @@ efly_live_img = out_dir / "efly-live.img"
 r(["truncate", f"--size={gpt_size_M + boot_size_M + sfs_size_M + ext4_size_M + 1}M", efly_live_img])
 
 # create partitions using sgdisk
-r(["sgdisk", f"--new=1:0:+{boot_size_M}M", "--typecode", "1:EF00", "--change-name", "1:efly-boot", efly_live_img]); print()
-r(["sgdisk", f"--new=2:0:+{sfs_size_M}M", "--change-name", "2:efly-squash", efly_live_img]); print()
-r(["sgdisk", f"--new=3:0:+{ext4_size_M}M", "--change-name", "3:efly-overlay", efly_live_img]); print()
+r(["sgdisk", f"--new=1:0:+{boot_size_M}M", "--typecode", "1:EF00", "--change-name", "1:efly-boot", "--partition-guid", f"1:{boot_uuid}", efly_live_img]); print()
+r(["sgdisk", f"--new=2:0:+{sfs_size_M}M", "--change-name", "2:efly-squash", "--partition-guid", f"2:{squash_uuid}", efly_live_img]); print()
+r(["sgdisk", f"--new=3:0:+{ext4_size_M}M", "--change-name", "3:efly-overlay", "--partition-guid", f"3:{overlay_uuid}", efly_live_img]); print()
 r(["sgdisk", "--print", efly_live_img]); print()
+info(f"boot uuid: {boot_uuid}")
+info(f"squash uuid: {squash_uuid}")
+info(f"overlay uuid: {overlay_uuid}")
+print()
 
 # set up loop device
 loop = get(["sudo", "losetup", "--show", "--find", "--partscan", efly_live_img])
@@ -397,12 +423,17 @@ atexit.register(sudo, ["umount", root])
 # but we actually need to install it relative to the obtained loop device, which we have only now.
 # so we install it a second time here.
 
-# remount boot partition and clear grub directory
+# mount boot partition once more
 boot = root / "boot"
 sudo(["mount", "--bind", efi, boot]); atexit.register(sudo, ["umount", boot])
+
+# backup grub configuration, since it has been modified inside postinst script.
+# but apart from that need to wipe grub dir to prevent out-of-diskspace error.
+# (grub partition size is minimal to keep image size minimal. so there is not much extra space left.)
+sudo(["mv", boot / "grub" / "grub.cfg", out_dir])
 sudo(["rm", "--recursive", boot / "grub"])
 
-# run grub-install
+# rerun grub-install. this time on the real configuration.
 chroot(root, [
         "grub-install",
         "--target=x86_64-efi",
@@ -411,7 +442,7 @@ chroot(root, [
         "--recheck",
         "--removable", loop])
 
-# copy grub config
-sudo(["cp", profile_dir / "grub.cfg", boot / "grub"])
+# recover grub config
+sudo(["mv", out_dir / "grub.cfg", boot / "grub"])
 
 info("Running cleanup code before program exit.")

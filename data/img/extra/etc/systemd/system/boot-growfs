@@ -4,7 +4,7 @@
 import os, subprocess, json
 from pathlib import Path
 
-partition = Path("/dev/disk/by-partlabel/efly-overlay")
+partition = Path("/dev/disk/by-partuuid/XXX__EFLY_OVERLAY_UUID__XXX")
 
 if not partition.is_symlink():
     print(f"error. could not find overlay partition: {partition}")
