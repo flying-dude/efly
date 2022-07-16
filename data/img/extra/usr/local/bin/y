@@ -43,4 +43,4 @@ if test (count $argv) -lt 1
     exit 0
 end
 
-$exe --sync $argv
+$exe --sync --needed $argv
