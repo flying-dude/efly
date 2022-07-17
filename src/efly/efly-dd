@@ -1,0 +1,282 @@
+#!/usr/bin/python
+
+usage = f"""
+Usage: efly dd [options] <block-device>
+
+Install Arch Linux on the specified block device or disk image file.
+The created system will have two partitions. One EFI boot partition and one
+ext4 root partition. Default EFI size is 128M und root will use the remaining availabe
+disk space. Root can be made smaller with option --root-size.
+
+General Options:
+  -h --help                  Show this screen.
+  -v --version               Print version info.
+
+  --profile <profile-dir>    Use a custom profile instead of default profile.
+
+  --shell                    Launch an interactive shell after running the postinst script.
+                             Useful for doing some manual tweaking or for debuggung.
+
+Size Options:                Unit in M, G or T (KiB, MiB, GiB, TiB resp.) - Example: 128M
+  --efi-size <size>          Set size of the EFI boot partition.
+  --root-size <size>         Set initial size of root partition. Will still auto-expand on first boot.
+""".lstrip().rstrip()
+
+# TODO rename: efly_live_img -> block_device, out_dir -> tmp
+
+import os, subprocess, atexit, sys, re, math, tempfile
+from pathlib import Path
+
+# https://stackoverflow.com/questions/6598053/python-global-exception-handling
+import sys
+def my_except_hook(exctype, value, traceback):
+    if exctype == KeyboardInterrupt:
+        print("Program interrupted via keyboard.")
+    else:
+        sys.__excepthook__(exctype, value, traceback)
+sys.excepthook = my_except_hook
+
+from elib import *
+
+script_dir = Path(os.path.dirname(os.path.realpath(__file__)))
+profile_dir = script_dir / "img"
+
+# parse cli
+efly_live_img = None
+cli_efi_size_M = 128
+cli_root_size_M = None
+flag_shell = False
+args = sys.argv[1:]
+while args:
+    if args[0] == "-h" or args[0] == "--help":
+        print(usage)
+        exit(0)
+
+    if args[0] == "-v" or args[0] == "--version":
+        print(version)
+        exit(0)
+
+    if args[0] == "--efi-size":
+        if len(args) < 2:
+            error('missing argument for cli flag "--efi-size"')
+            exit(1)
+
+        try:
+            cli_efi_size_B = parse_size(args[1])
+            cli_efi_size_M = math.ceil(cli_efi_size_B / 1024 / 1024)
+            info(f'will use at least {cli_efi_size_M}MiB for EFI boot partition')
+        except Exception as e:
+            error(f'invalid efi size: "{args[1]}"')
+            exit(1)
+
+        args = args[2:]
+        continue
+
+    if args[0] == "--root-size":
+        if len(args) < 2:
+            error('missing argument for cli flag "--root-size"')
+            exit(1)
+
+        try:
+            cli_root_size_B = parse_size(args[1])
+            cli_root_size_M = math.ceil(cli_root_size_B / 1024 / 1024)
+            info(f'if possible, will use at most {cli_root_size_M}MiB for root partition')
+        except Exception as e:
+            error(f'invalid root size: "{args[1]}"')
+            exit(1)
+
+        args = args[2:]
+        continue
+
+    if args[0] == "--profile":
+        if len(args) < 2:
+            error('missing argument for cli flag "--profile"')
+            exit(1)
+        else:
+            profile_dir = Path(args[1])
+            args = args[2:]
+            continue
+
+    if args[0] == "--shell":
+        flag_shell = True
+        args = args[2:]
+        continue
+
+    efly_live_img = args[0]
+    info(f"installing on block device: {efly_live_img}")
+
+    args = args[1:]
+    if args:
+        error(f'excess arguments: {args}')
+        exit(1)
+
+if not efly_live_img:
+    error("no block device specified.")
+    exit(1)
+
+# list of required shell commands together with their corresponding packages
+cmd2pkg = [
+    ("arch-chroot", "arch-install-scripts"),
+    ("mkfs.vfat", "dosfstools"),
+    ("mkfs.ext4", "e2fsprogs"),
+    ("pacstrap", "arch-install-scripts"),
+    ("sgdisk", "gptfdisk"),
+    ("sudo", "sudo")]
+
+# check for presence of required shell commands
+from shutil import which
+missing_pkg = False
+for cmd, pkg in cmd2pkg:
+    if which(cmd) is None:
+        error(f"missing shell command '{cmd}'. if running arch linux, install with: pacman --sync {pkg}")
+        missing_pkg = True
+
+# abort if we are missing some shell commands
+if missing_pkg:
+    error("exiting due to missing shell command.")
+    exit(1)
+
+# check if config dir is present
+if not profile_dir.is_dir():
+    error(f'profile folder not present: "{profile_dir}"')
+    exit(1)
+
+# check for presence of package list
+package_txt = profile_dir / "packages.txt"
+if not package_txt.is_file():
+    error(f'package file not found: "{packages_txt}"')
+    exit(1)
+
+# read and parse list of packages
+packages = []
+with open(package_txt) as lines:
+    for line in lines:
+        line = line.rstrip()
+        if len(line) == 0:
+            continue
+
+        line = line.split('#')[0]
+        if len(line) == 0:
+            continue
+
+        line = line.split(' ')
+        for pkg in line:
+            if len(pkg) == 0:
+                continue
+            packages.append(pkg)
+
+# generate a random uuid for each partition
+import uuid
+boot_uuid = str(uuid.uuid4())
+root_uuid = str(uuid.uuid4())
+
+# create partitions using sgdisk
+info("creating partitions"); print()
+
+r(["sgdisk", "--zap-all", efly_live_img])
+
+r(["sgdisk",
+    "--new", f"1:0:+{cli_efi_size_M}M",
+    "--typecode", "1:EF00",
+    "--change-name", "1:efly-efi",
+    "--partition-guid", f"1:{boot_uuid}",
+    efly_live_img])
+print()
+
+if cli_root_size_M:
+    r(["sgdisk", "--new" f"2:0:+{cli_root_size_M}M", "--change-name", "2:efly-root", "--partition-guid", f"2:{root_uuid}", efly_live_img])
+else:
+    r(["sgdisk", "--largest-new", "2",               "--change-name", "2:efly-root", "--partition-guid", f"2:{root_uuid}", efly_live_img])
+print()
+
+r(["sgdisk", "--print", efly_live_img]); print()
+
+info(f"boot uuid: {boot_uuid}")
+info(f"root uuid: {root_uuid}")
+print()
+
+# create temporary directory
+# https://stackoverflow.com/questions/3223604/how-to-create-a-temporary-directory-and-get-its-path-file-name
+tmp = tempfile.TemporaryDirectory(prefix="efly-dd__")
+atexit.register(tmp.cleanup)
+info(f"working in temporary directory: {tmp.name}")
+out_dir = Path(tmp.name)
+
+# set up data dir. we run pacstrap here. this should be owned by root to avoid pacman reporting warning.
+chroot_fs = out_dir / "chroot-fs"
+sudo(["mkdir", chroot_fs])
+atexit.register(sudo, ["rmdir", chroot_fs])
+
+# set up loop device
+loop = get(["sudo", "losetup", "--show", "--find", "--partscan", efly_live_img])
+info(f"loop: {loop}")
+atexit.register(sudo, ["losetup", "--detach", loop])
+
+# format partitions
+sudo(["mkfs.vfat", f"{loop}p1"])
+sudo(["mkfs.ext4", "-F", f"{loop}p2"])
+
+# mount root partition
+sudo(["mount", f"{loop}p2", chroot_fs]); atexit.register(sudo, ["umount", chroot_fs])
+
+# mount boot partition
+chroot_boot = chroot_fs / "boot"
+sudo(["mkdir", chroot_boot])
+sudo(["mount", f"{loop}p1", chroot_boot]); atexit.register(sudo, ["umount", chroot_boot])
+
+# run pacstrap
+sudo(["pacstrap", "-cGM", chroot_fs] + packages)
+chroot(chroot_fs, ["pacman-key", "--init"])
+chroot(chroot_fs, ["pacman-key", "--populate"])
+
+# obtain "month-year" for bootloader id
+import datetime
+year = datetime.datetime.now().year
+month = datetime.datetime.now().month
+month_year = f"{'{:02}'.format(month)}-{year}"
+
+# install grub. this one is only to obtain the correct size for boot partition
+# we run grub-install "for real" a second time further below
+chroot(chroot_fs, [
+        "grub-install",
+        "--target=x86_64-efi",
+        "--efi-directory=/boot",
+        f'--bootloader-id="Efly Live {month_year} [GRUB]"',
+        "--recheck",
+        "--removable", loop])
+
+# copy user-defined filesystem data
+extra_files = profile_dir / "extra"
+if extra_files.is_dir():
+    sudo(["cp", "--recursive", "--no-target-directory", extra_files, chroot_fs])
+
+# execute image customization script, if it exists
+postinst_script = profile_dir / "postinst"
+if postinst_script.is_file():
+    # copy files
+    sudo(["cp", postinst_script, chroot_fs])
+    sudo(["chmod", "+x", chroot_fs / "postinst"])
+
+    # exec postinst inside chroot
+    chroot(chroot_fs, ["/postinst"],
+        EFLY_BOOT_UUID=boot_uuid,
+        EFLY_ROOT_UUID=root_uuid,
+        EFLY_MODE="dd")
+
+    # cleanup postinst file after running it
+    sudo(["rm", chroot_fs / "postinst"])
+
+# hop into a shell, if requested by the user.
+if flag_shell:
+    if (chroot_fs / "bin" / "fish").is_file():
+        chroot(chroot_fs, ["/bin/fish", "--private"]) # launch fish but do not store any history
+    elif (chroot_fs / "bin" / "bash").is_file():
+        chroot(chroot_fs, ["/bin/bash"])
+    elif (chroot_fs / "bin" / "sh").is_file():
+        chroot(chroot_fs, ["/bin/sh"])
+    else:
+        error('cli flag "--shell" was specified but could not find a shell at /bin/fish, /bin/bash or /bin/sh')
+        exit(1)
+
+info("Running cleanup code before program exit.")
+

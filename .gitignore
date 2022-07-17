@@ -3,3 +3,5 @@
 
 # exclude default output dir for mkarchiso and efly-img
 out
+
+__pycache__

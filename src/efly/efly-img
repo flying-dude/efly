@@ -8,6 +8,8 @@ The live system has persistent storage and will retain changes among reboots.
 
 General Options:
   -h --help                  Show this screen.
+  -v --version               Print version info.
+
   --out <out-dir>            Choose output directory instead of out/ inside current working directory.
   --profile <profile-dir>    Use a custom profile instead of default profile.
 
@@ -22,50 +24,20 @@ Size Options:                Unit in M, G or T (KiB, MiB, GiB, TiB resp.) - Exam
 import os, subprocess, atexit, sys, re, math
 from pathlib import Path
 
+# https://stackoverflow.com/questions/6598053/python-global-exception-handling
+import sys
+def my_except_hook(exctype, value, traceback):
+    if exctype == KeyboardInterrupt:
+        print "Program interrupted via keyboard."
+    else:
+        sys.__excepthook__(exctype, value, traceback)
+sys.excepthook = my_except_hook
+
+from elib import *
+
 script_dir = Path(os.path.dirname(os.path.realpath(__file__)))
 profile_dir = script_dir / "img"
 out_dir = Path("out")
-
-# colored output, if corresponding python module is available
-try:
-    import colorama
-    from colorama import Fore, Back, Style
-    colorama.init()
-    yellow = lambda s: Fore.YELLOW + s + Style.RESET_ALL
-    green = lambda s: Fore.GREEN + s + Style.RESET_ALL
-    red = lambda s: Fore.RED + s + Style.RESET_ALL
-    light_cyan = lambda s: Fore.LIGHTCYAN_EX + s + Style.RESET_ALL
-    light_green = lambda s: Fore.LIGHTGREEN_EX + s + Style.RESET_ALL
-    light_magenta = lambda s: Fore.LIGHTMAGENTA_EX + s + Style.RESET_ALL
-    light_red = lambda s: Fore.LIGHTRED_EX + s + Style.RESET_ALL
-except ImportError:
-    yellow = lambda s: s
-    green = lambda s: s
-    red = lambda s: s
-    light_cyan = lambda s: s
-    light_green = lambda s: s
-    light_magenta = lambda s: s
-    light_red = lambda s: s
-
-def log(prefix, msg):
-    print(f"[{prefix}] {msg}")
-
-def info(msg):
-    log(yellow("info"), msg)
-
-def error(msg):
-    log(light_red("error"), msg)
-
-# https://stackoverflow.com/questions/33341000/extract-numbers-and-size-information-kb-mb-etc-from-a-string-in-python
-size_regex = re.compile(r'(\d+(?:\.\d+)?)\s*([bkmgtp]?)', re.IGNORECASE)
-size_order = ['b', 'k', 'm', 'g', 't', 'p']
-def parse_size(size_string): # parse size string and return size in bytes
-    match = size_regex.findall(size_string)
-    if not match:
-            raise Exception(f'invalid size: "{size_string}"')
-    value, unit = match[0]
-    unit = unit if unit else "b" # unit is optional. default is byte.
-    return int(float(value) * (1024**size_order.index(unit.lower())))
 
 # parse cli
 cli_efi_size_M = -1
@@ -73,12 +45,12 @@ cli_overlay_size_M = -1
 flag_shell = False
 args = sys.argv[1:]
 while args and args[0].startswith("-"):
-    if args[0] == "-v" or args[0] == "--version":
-        print(version)
-        exit(0)
-
     if args[0] == "-h" or args[0] == "--help":
         print(usage)
+        exit(0)
+
+    if args[0] == "-v" or args[0] == "--version":
+        print(version)
         exit(0)
 
     if args[0] == "--efi-size":
@@ -146,6 +118,7 @@ cmd2pkg = [
     ("mkfs.ext4", "e2fsprogs"),
     ("pacstrap", "arch-install-scripts"),
     ("sgdisk", "gptfdisk"),
+    ("mksquashfs", "squashfs-tools"),
     ("sudo", "sudo")]
 
 # check for presence of required shell commands
@@ -189,60 +162,6 @@ with open(package_txt) as lines:
             if len(pkg) == 0:
                 continue
             packages.append(pkg)
-
-exiting = False
-def r(args, ignore_error=False, **kwargs):
-    global exiting
-    cmd = ' '.join(str(arg) for arg in args)
-    log(light_cyan("exec"), cmd)
-
-    returncode = subprocess.run(args, **kwargs).returncode
-    if not returncode == 0 and not ignore_error:
-        error(f'command failed: {red(cmd)}')
-
-        # exit on error. but don't call exit again, if we are already exiting (this could happen, if we have another error during cleanup).
-        if not exiting:
-            exiting = True
-            exit(1)
-    else:
-        return returncode
-
-def sudo(args, **kwargs):
-        return r(["sudo"] + args, **kwargs)
-
-# run a command inside chroot. note that we don't pass **kwargs to python subcommand.
-# instead, we use **kwargs here to define environment variables to be used inside chroot. if we were
-# to define **kwargs and pass that verbatim to python subcommand, then env would only be passed to "arch-chroot"
-# but not available inside the actual chroot (which is what we want).
-def chroot(path, args, **kwargs):
-    path = Path(path) # make sure path is an actual Path()
-
-    # assign optional environment variables to command, passed as **kwargs
-    cmd = []
-    for key, value in kwargs.items():
-        print(f"{key}={value}")
-        cmd += [f"{key}={value}"]
-
-    cmd += ["arch-chroot", path] + args
-    returncode = sudo(cmd)
-
-    # do a safety lazy umount:
-    # umount after chroot often does not go smoothly/reliably. try lazy umount here to umount stuff that is still mounted.
-    # umount will error, in case path in question has already been umounted successfully.
-    # this is actually what we want anyway, so not really an error. therefore, we can ignore umount error here.
-    sudo(["umount", "--lazy", "--quiet", path / "dev"], ignore_error=True)
-    sudo(["umount", "--lazy", "--quiet", path / "proc"], ignore_error=True)
-    sudo(["umount", "--lazy", "--quiet", path / "sys"], ignore_error=True)
-
-    return returncode
-
-def get(args, **kwargs):
-    log(light_cyan("get"), ' '.join(str(arg) for arg in args))
-    return subprocess.check_output(args, **kwargs).decode('utf-8').rstrip()
-
-# obtain disk usage in bytes
-def du(path, **kwargs):
-    return int(get(['sudo', 'du','--summarize', '--bytes', path], **kwargs).split()[0])
 
 # create output directory
 # TODO error handling in case creating dir fails
@@ -292,7 +211,7 @@ chroot(chroot_fs,
 chroot(chroot_fs, ["pacman-key", "--init"])
 chroot(chroot_fs, ["pacman-key", "--populate"])
 
-# generate random uuid for each partition
+# generate a random uuid for each partition
 import uuid
 boot_uuid = str(uuid.uuid4())
 squash_uuid = str(uuid.uuid4())
@@ -314,12 +233,13 @@ if postinst_script.is_file():
     chroot(chroot_fs, ["/postinst"],
         EFLY_BOOT_UUID=boot_uuid,
         EFLY_SQUASH_UUID=squash_uuid,
-        EFLY_OVERLAY_UUID=overlay_uuid)
+        EFLY_OVERLAY_UUID=overlay_uuid,
+        EFLY_MODE="img")
 
     # cleanup postinst file after running it
     sudo(["rm", chroot_fs / "postinst"])
 
-# hop into a shell, if requested by the user
+# hop into a shell, if requested by the user.
 if flag_shell:
     if (chroot_fs / "bin" / "fish").is_file():
         chroot(chroot_fs, ["/bin/fish", "--private"]) # launch fish but do not store any history
@@ -372,9 +292,20 @@ efly_live_img = out_dir / "efly-live.img"
 r(["truncate", f"--size={gpt_size_M + boot_size_M + sfs_size_M + ext4_size_M + 1}M", efly_live_img])
 
 # create partitions using sgdisk
-r(["sgdisk", f"--new=1:0:+{boot_size_M}M", "--typecode", "1:EF00", "--change-name", "1:efly-boot", "--partition-guid", f"1:{boot_uuid}", efly_live_img]); print()
-r(["sgdisk", f"--new=2:0:+{sfs_size_M}M", "--change-name", "2:efly-squash", "--partition-guid", f"2:{squash_uuid}", efly_live_img]); print()
-r(["sgdisk", f"--new=3:0:+{ext4_size_M}M", "--change-name", "3:efly-overlay", "--partition-guid", f"3:{overlay_uuid}", efly_live_img]); print()
+r(["sgdisk",
+    "--new", f"1:0:+{boot_size_M}M",
+    "--typecode", "1:EF00",
+    "--change-name", "1:efly-efi",
+    "--partition-guid", f"1:{boot_uuid}",
+    efly_live_img])
+print()
+
+r(["sgdisk", "--new", f"2:0:+{sfs_size_M}M", "--change-name", "2:efly-squash", "--partition-guid", f"2:{squash_uuid}", efly_live_img])
+print()
+
+r(["sgdisk", "--new", f"3:0:+{ext4_size_M}M", "--change-name", "3:efly-overlay", "--partition-guid", f"3:{overlay_uuid}", efly_live_img])
+print()
+
 r(["sgdisk", "--print", efly_live_img]); print()
 info(f"boot uuid: {boot_uuid}")
 info(f"squash uuid: {squash_uuid}")
@@ -445,4 +376,4 @@ chroot(root, [
 # recover grub config
 sudo(["mv", out_dir / "grub.cfg", boot / "grub"])
 
-info("Running cleanup code before program exit.")
+info("Running cleanup data before program exit.")

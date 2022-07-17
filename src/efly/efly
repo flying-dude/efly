@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
-version = "UNKNOWN_VERSION"
+from elib import version
+
 usage = f"""
 Usage: efly [subcommand] *subcommand-options*
 Version: {version}
@@ -8,6 +9,7 @@ Version: {version}
 Multi-Command for creating and managing bootable disk images.
 
 Subcommands:
+  efly dd        :: Install Arch Linux on a Block Device
   efly img       :: Create a bootable raw disk image.
   efly qemu      :: Boot a disk image using qemu.
   efly vncserver :: Launch a VNC server using TigerVNC.
@@ -25,7 +27,7 @@ if len(sys.argv) == 1 or sys.argv[1] == "-h" or sys.argv[1] == "--help":
 
 cmd = sys.argv[1]
 args = sys.argv[2:]
-if cmd == "img" or cmd == "qemu" or cmd == "vncserver":
+if cmd == "dd" or cmd == "img" or cmd == "qemu" or cmd == "vncserver":
     completed_process = subprocess.run([script_dir / f"efly-{cmd}"] + args)
     exit(completed_process.returncode)
 else:
