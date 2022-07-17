@@ -36,7 +36,7 @@ sys.excepthook = my_except_hook
 from elib import *
 
 script_dir = Path(os.path.dirname(os.path.realpath(__file__)))
-profile_dir = script_dir / "img"
+profile_dir = script_dir / "data" / "img"
 out_dir = Path("out")
 
 # parse cli
@@ -358,10 +358,8 @@ atexit.register(sudo, ["umount", root])
 boot = root / "boot"
 sudo(["mount", "--bind", efi, boot]); atexit.register(sudo, ["umount", boot])
 
-# backup grub configuration, since it has been modified inside postinst script.
-# but apart from that need to wipe grub dir to prevent out-of-diskspace error.
+# need to wipe grub dir to prevent out-of-diskspace error when running grub again in the next step.
 # (grub partition size is minimal to keep image size minimal. so there is not much extra space left.)
-sudo(["mv", boot / "grub" / "grub.cfg", out_dir])
 sudo(["rm", "--recursive", boot / "grub"])
 
 # rerun grub-install. this time on the real configuration.
@@ -373,7 +371,9 @@ chroot(root, [
         "--recheck",
         "--removable", loop])
 
-# recover grub config
-sudo(["mv", out_dir / "grub.cfg", boot / "grub"])
+# copy grub config and assign variables inside the file
+sudo(["cp", script_dir / "data" / "grub.cfg", boot / "grub"])
+sudo(["sed", "--in-place", f"s/XXX__EFLY_ROOT_UUID__XXX/{squash_uuid}/g", boot / "grub" / "grub.cfg"])
+sudo(["sed", "--in-place", f"s/XXX__EFLY_ROOTFSTYPE__XXX/squashfs/g", boot / "grub" / "grub.cfg"])
 
 info("Running cleanup data before program exit.")

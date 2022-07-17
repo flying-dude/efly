@@ -39,7 +39,7 @@ sys.excepthook = my_except_hook
 from elib import *
 
 script_dir = Path(os.path.dirname(os.path.realpath(__file__)))
-profile_dir = script_dir / "img"
+profile_dir = script_dir / "data" / "img"
 
 # parse cli
 efly_live_img = None
@@ -279,4 +279,3 @@ if flag_shell:
         exit(1)
 
 info("Running cleanup code before program exit.")
-

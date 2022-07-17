@@ -2,13 +2,13 @@
 
 set -ex
 
-# inform the bootlader how to identify the squashfs root partition
-sed --in-place "s/XXX__EFLY_SQUASH_UUID__XXX/${EFLY_SQUASH_UUID}/g" /boot/grub/grub.cfg
-
+# TODO run these commands from efly-img and move it out of the profile
 # register overlay partition in initcpio hook and growfs script
 sed --in-place "s/XXX__EFLY_OVERLAY_UUID__XXX/${EFLY_OVERLAY_UUID}/g" /usr/lib/initcpio/hooks/overlayfs
 sed --in-place "s/XXX__EFLY_OVERLAY_UUID__XXX/${EFLY_OVERLAY_UUID}/g" /etc/systemd/system/boot-growfs
 
+# TODO this should probably be done inside efly-img as well
+# if done here this should only happen for non-standard locale (aka not english)
 # configure and generate locale
 echo "LANG=en_US.UTF-8" > /etc/locale.conf
 echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
