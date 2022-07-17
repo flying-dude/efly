@@ -1,5 +1,5 @@
 # mount EFI boot partition to /boot
-PARTLABEL=efly-boot /boot vfat defaults 0 1
+PARTUUID=XXX__EFLY_EFI_UUID__XXX /boot vfat defaults 0 1
 
 # write tmp and log stuff to RAM (tmpfs)
 # Added 4 lines to use RAM instead of SSD for temp and log files

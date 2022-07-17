@@ -220,14 +220,18 @@ sudo(["mkfs.ext4", "-F", f"{loop}p2"])
 sudo(["mount", f"{loop}p2", chroot_fs]); atexit.register(sudo, ["umount", chroot_fs])
 
 # mount boot partition
-chroot_boot = chroot_fs / "boot"
-sudo(["mkdir", chroot_boot])
-sudo(["mount", f"{loop}p1", chroot_boot]); atexit.register(sudo, ["umount", chroot_boot])
+boot = chroot_fs / "boot"
+sudo(["mkdir", boot])
+sudo(["mount", f"{loop}p1", boot]); atexit.register(sudo, ["umount", boot])
 
 # run pacstrap
 sudo(["pacstrap", "-cGM", chroot_fs] + packages)
 chroot(chroot_fs, ["pacman-key", "--init"])
 chroot(chroot_fs, ["pacman-key", "--populate"])
+
+# copy fstab
+sudo(["cp", script_dir / "data" / "fstab", chroot_fs / "etc"])
+sudo(["sed", "--in-place", f"s/XXX__EFLY_EFI_UUID__XXX/{boot_uuid}/g", chroot_fs / "etc" / "fstab"])
 
 # obtain "month-year" for bootloader id
 import datetime

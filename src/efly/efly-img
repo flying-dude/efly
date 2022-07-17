@@ -28,7 +28,7 @@ from pathlib import Path
 import sys
 def my_except_hook(exctype, value, traceback):
     if exctype == KeyboardInterrupt:
-        print "Program interrupted via keyboard."
+        print("Program interrupted via keyboard.")
     else:
         sys.__excepthook__(exctype, value, traceback)
 sys.excepthook = my_except_hook
@@ -189,6 +189,18 @@ atexit.register(sudo, ["umount", "--lazy", "--quiet", chroot_boot], ignore_error
 
 # run pacstrap
 sudo(["pacstrap", "-cGM", chroot_fs] + packages)
+chroot(chroot_fs, ["pacman-key", "--init"])
+chroot(chroot_fs, ["pacman-key", "--populate"])
+
+# generate a random uuid for each partition
+import uuid
+boot_uuid = str(uuid.uuid4())
+squash_uuid = str(uuid.uuid4())
+overlay_uuid = str(uuid.uuid4())
+
+# copy fstab
+sudo(["cp", script_dir / "data" / "fstab", chroot_fs / "etc"])
+sudo(["sed", "--in-place", f"s/XXX__EFLY_EFI_UUID__XXX/{boot_uuid}/g", chroot_fs / "etc" / "fstab"])
 
 # obtain "month-year" for bootloader id
 import datetime
@@ -207,15 +219,6 @@ chroot(chroot_fs,
         "--recheck",
         "--removable"
     ])
-
-chroot(chroot_fs, ["pacman-key", "--init"])
-chroot(chroot_fs, ["pacman-key", "--populate"])
-
-# generate a random uuid for each partition
-import uuid
-boot_uuid = str(uuid.uuid4())
-squash_uuid = str(uuid.uuid4())
-overlay_uuid = str(uuid.uuid4())
 
 # copy user-defined filesystem data
 extra_files = profile_dir / "extra"
