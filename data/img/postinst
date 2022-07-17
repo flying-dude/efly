@@ -30,8 +30,14 @@ mkinitcpio --allpresets
 # enable systemd services
 systemctl enable NetworkManager.service
 systemctl enable reflector.service
-systemctl enable boot-growfs.service
 systemctl enable bluetooth.service
+
+# TODO can we put this into efly-img? it's not really an attribute of the profile...
+# growable root partition is only available on live medium with persistent storage
+if [[ $EFLY_MODE = "live-persistent" ]]
+then
+    systemctl enable boot-growfs.service
+fi
 
 # install ymerge package manager
 chown --recursive efly:efly /ymerge-PKGBUILD/

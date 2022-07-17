@@ -8,6 +8,8 @@ The created system will have two partitions. One EFI boot partition and one
 ext4 root partition. Default EFI size is 128M und root will use the remaining availabe
 disk space. Root can be made smaller with option --root-size.
 
+Note that this command will wipe all data on that block device before installing Arch Linux on it.
+
 General Options:
   -h --help                  Show this screen.
   -v --version               Print version info.
@@ -19,7 +21,8 @@ General Options:
 
 Size Options:                Unit in M, G or T (KiB, MiB, GiB, TiB resp.) - Example: 128M
   --efi-size <size>          Set size of the EFI boot partition.
-  --root-size <size>         Set initial size of root partition. Will still auto-expand on first boot.
+  --root-size <size>         Assign a size for the root partition,
+                             as opposed to simply use remaining availabel storage.
 """.lstrip().rstrip()
 
 # TODO rename: efly_live_img -> block_device, out_dir -> tmp
