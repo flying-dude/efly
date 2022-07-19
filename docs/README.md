@@ -1,3 +1,5 @@
+**[Profiles](profiles.md) - [Flash](flash.md)**
+
 ## Creating Bootable Disk Images
 
 The efly live system ships with its own command-line tool for creating bootable disk images.
@@ -23,9 +25,9 @@ Size Options:                Unit in M, G or T (KiB, MiB, GiB, TiB resp.) - Exam
   --overlay-size <size>      Set initial size of overlay partition. Will still auto-expand on first boot.
 ```
 
-## Install the Disk Image Tool
+## Install efly Using PKGBUILD
 
-To obtain the efly command-line tool, you can use the available [PKGBUILD](https://github.com/flying-dude/curated-aur/blob/main/pkg/efly/PKGBUILD):
+To obtain the `efly` command-line tool, you can use the available [PKGBUILD](https://github.com/flying-dude/curated-aur/blob/main/pkg/efly/PKGBUILD):
 
 ```
 wget https://raw.githubusercontent.com/flying-dude/curated-aur/main/pkg/efly/PKGBUILD
