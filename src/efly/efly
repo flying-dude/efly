@@ -3,13 +3,15 @@
 from elib import version
 
 usage = f"""
-Usage: efly [subcommand] *subcommand-options*
+Usage: efly [subcommand] [options]
+       efly <subcommand> --help
+
 Version: {version}
 
-Multi-Command for creating and managing bootable disk images.
+Create and manage bootable disk images based on Arch Linux.
 
 Subcommands:
-  efly dd        :: Install Arch Linux on a Block Device
+  efly dd        :: Install Arch Linux on a block device.
   efly img       :: Create a bootable raw disk image.
   efly qemu      :: Boot a disk image using qemu.
   efly vncserver :: Launch a VNC server using TigerVNC.

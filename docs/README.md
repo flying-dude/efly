@@ -25,7 +25,24 @@ Size Options:                Unit in M, G or T (KiB, MiB, GiB, TiB resp.) - Exam
   --overlay-size <size>      Set initial size of overlay partition. Will still auto-expand on first boot.
 ```
 
-## Install efly Using PKGBUILD
+## Install Directly on a Block Devick
+
+You can use `efly dd` to install a preconfigured Arch Linux system directly on a given block device (keep in mind that this will wipe all data on that block device):
+
+```
+efly dd /dev/sdX # wipe sdX and install efly
+```
+
+It doesn't have to be a block device. You can also target a raw disk image:
+
+```
+truncate --size=10G myimage.img
+efly dd myimage.img
+```
+
+Installations created using `efly dd` have only two partitions: One EFI boot partition and one `ext4` root partition.
+
+## Install efly Command Using PKGBUILD
 
 To obtain the `efly` command-line tool, you can use the available [PKGBUILD](https://github.com/flying-dude/curated-aur/blob/main/pkg/efly/PKGBUILD):
 

@@ -21,8 +21,8 @@ General Options:
 
 Size Options:                Unit in M, G or T (KiB, MiB, GiB, TiB resp.) - Example: 128M
   --efi-size <size>          Set size of the EFI boot partition.
-  --root-size <size>         Assign a size for the root partition,
-                             as opposed to simply use remaining availabel storage.
+  --root-size <size>         Assign a size for the root partition, rather than to simply
+                             use all remaining available storage for root partition.
 """.lstrip().rstrip()
 
 # TODO rename: efly_live_img -> block_device, out_dir -> tmp
