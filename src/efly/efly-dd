@@ -25,8 +25,6 @@ Size Options:                Unit in M, G or T (KiB, MiB, GiB, TiB resp.) - Exam
                              use all remaining available storage for root partition.
 """.lstrip().rstrip()
 
-# TODO rename: efly_live_img -> block_device, out_dir -> tmp
-
 import os, subprocess, atexit, sys, re, math, tempfile
 from pathlib import Path
 
@@ -45,7 +43,7 @@ script_dir = Path(os.path.dirname(os.path.realpath(__file__)))
 profile_dir = script_dir / "data" / "img"
 
 # parse cli
-efly_live_img = None
+block_device = None
 cli_efi_size_M = 128
 cli_root_size_M = None
 flag_shell = False
@@ -105,15 +103,15 @@ while args:
         args = args[2:]
         continue
 
-    efly_live_img = args[0]
-    info(f"installing on block device: {efly_live_img}")
+    block_device = args[0]
+    info(f"installing on block device: {block_device}")
 
     args = args[1:]
     if args:
         error(f'excess arguments: {args}')
         exit(1)
 
-if not efly_live_img:
+if not block_device:
     error("no block device specified.")
     exit(1)
 
@@ -176,23 +174,23 @@ root_uuid = str(uuid.uuid4())
 # create partitions using sgdisk
 info("creating partitions"); print()
 
-r(["sgdisk", "--zap-all", efly_live_img])
+r(["sgdisk", "--zap-all", block_device])
 
 r(["sgdisk",
     "--new", f"1:0:+{cli_efi_size_M}M",
     "--typecode", "1:EF00",
     "--change-name", "1:efly-efi",
     "--partition-guid", f"1:{boot_uuid}",
-    efly_live_img])
+    block_device])
 print()
 
 if cli_root_size_M:
-    r(["sgdisk", "--new" f"2:0:+{cli_root_size_M}M", "--change-name", "2:efly-root", "--partition-guid", f"2:{root_uuid}", efly_live_img])
+    r(["sgdisk", "--new" f"2:0:+{cli_root_size_M}M", "--change-name", "2:efly-root", "--partition-guid", f"2:{root_uuid}", block_device])
 else:
-    r(["sgdisk", "--largest-new", "2",               "--change-name", "2:efly-root", "--partition-guid", f"2:{root_uuid}", efly_live_img])
+    r(["sgdisk", "--largest-new", "2",               "--change-name", "2:efly-root", "--partition-guid", f"2:{root_uuid}", block_device])
 print()
 
-r(["sgdisk", "--print", efly_live_img]); print()
+r(["sgdisk", "--print", block_device]); print()
 
 info(f"boot uuid: {boot_uuid}")
 info(f"root uuid: {root_uuid}")
@@ -202,16 +200,16 @@ print()
 # https://stackoverflow.com/questions/3223604/how-to-create-a-temporary-directory-and-get-its-path-file-name
 tmp = tempfile.TemporaryDirectory(prefix="efly-dd__")
 atexit.register(tmp.cleanup)
-info(f"working in temporary directory: {tmp.name}")
-out_dir = Path(tmp.name)
+info(f"Working in temporary directory: {tmp.name}")
+tmp = Path(tmp.name)
 
 # set up data dir. we run pacstrap here. this should be owned by root to avoid pacman reporting warning.
-chroot_fs = out_dir / "chroot-fs"
+chroot_fs = tmp / "chroot-fs"
 sudo(["mkdir", chroot_fs])
 atexit.register(sudo, ["rmdir", chroot_fs])
 
 # set up loop device
-loop = get(["sudo", "losetup", "--show", "--find", "--partscan", efly_live_img])
+loop = get(["sudo", "losetup", "--show", "--find", "--partscan", block_device])
 info(f"loop: {loop}")
 atexit.register(sudo, ["losetup", "--detach", loop])
 
