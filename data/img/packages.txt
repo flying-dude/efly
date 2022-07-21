@@ -78,7 +78,6 @@ cmake
 fmt
 nlohmann-json
 ninja
-gtest
 
 # packages from arch linux releng config
 alsa-utils
