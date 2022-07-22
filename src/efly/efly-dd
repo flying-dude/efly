@@ -16,6 +16,7 @@ General Options:
 
   --profile <profile-dir>    Use a custom profile instead of default profile.
 
+  --nocolor                  Deactivate colored output.
   --shell                    Launch an interactive shell after running the postinst script.
                              Useful for doing some manual tweaking or for debuggung.
 
@@ -37,6 +38,7 @@ def my_except_hook(exctype, value, traceback):
         sys.__excepthook__(exctype, value, traceback)
 sys.excepthook = my_except_hook
 
+import elib
 from elib import *
 
 script_dir = Path(os.path.dirname(os.path.realpath(__file__)))
@@ -98,9 +100,14 @@ while args:
             args = args[2:]
             continue
 
+    if args[0] == "--nocolor":
+        elib.colored_output = False
+        args = args[1:]
+        continue
+
     if args[0] == "--shell":
         flag_shell = True
-        args = args[2:]
+        args = args[1:]
         continue
 
     block_device = args[0]

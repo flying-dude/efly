@@ -1,22 +1,23 @@
 import os, subprocess, atexit, sys, re, math
 from pathlib import Path
 
-__all__ = ["version", "log", "info", "error", "parse_size", "r", "sudo", "chroot", "get", "du"]
+__all__ = ["version", "log", "info", "error", "parse_size", "r", "sudo", "chroot", "get", "du", "colored_output"]
 
 version = "UNKNOWN_VERSION"
+colored_output = True
 
 # colored output, if corresponding python module is available
 try:
     import colorama
     from colorama import Fore, Back, Style
     colorama.init()
-    yellow = lambda s: Fore.YELLOW + s + Style.RESET_ALL
-    green = lambda s: Fore.GREEN + s + Style.RESET_ALL
-    red = lambda s: Fore.RED + s + Style.RESET_ALL
-    light_cyan = lambda s: Fore.LIGHTCYAN_EX + s + Style.RESET_ALL
-    light_green = lambda s: Fore.LIGHTGREEN_EX + s + Style.RESET_ALL
-    light_magenta = lambda s: Fore.LIGHTMAGENTA_EX + s + Style.RESET_ALL
-    light_red = lambda s: Fore.LIGHTRED_EX + s + Style.RESET_ALL
+    yellow = lambda s: Fore.YELLOW + s + Style.RESET_ALL if colored_output else s
+    green = lambda s: Fore.GREEN + s + Style.RESET_ALL if colored_output else s
+    red = lambda s: Fore.RED + s + Style.RESET_ALL if colored_output else s
+    light_cyan = lambda s: Fore.LIGHTCYAN_EX + s + Style.RESET_ALL if colored_output else s
+    light_green = lambda s: Fore.LIGHTGREEN_EX + s + Style.RESET_ALL if colored_output else s
+    light_magenta = lambda s: Fore.LIGHTMAGENTA_EX + s + Style.RESET_ALL if colored_output else s
+    light_red = lambda s: Fore.LIGHTRED_EX + s + Style.RESET_ALL if colored_output else s
 except ImportError:
     yellow = lambda s: s
     green = lambda s: s
