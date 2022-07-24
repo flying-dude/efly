@@ -42,7 +42,8 @@ import elib
 from elib import *
 
 script_dir = Path(os.path.dirname(os.path.realpath(__file__)))
-profile_dir = script_dir / "data" / "img"
+data_dir = script_dir / "data" # TODO this should be a global variable
+profile_dir = data_dir / "img" # TODO this should also be a global variable. and separate from data_dir.
 
 # parse cli
 block_device = None
@@ -233,13 +234,7 @@ sudo(["mkdir", boot])
 sudo(["mount", f"{loop}p1", boot]); atexit.register(sudo, ["umount", boot])
 
 # run pacstrap
-sudo(["pacstrap", "-cGM", chroot_fs] + packages)
-chroot(chroot_fs, ["pacman-key", "--init"])
-chroot(chroot_fs, ["pacman-key", "--populate"])
-
-# copy fstab
-sudo(["cp", script_dir / "data" / "fstab", chroot_fs / "etc"])
-sudo(["sed", "--in-place", f"s/XXX__EFLY_EFI_UUID__XXX/{boot_uuid}/g", chroot_fs / "etc" / "fstab"])
+pacstrap(chroot_fs, packages, boot_uuid, data_dir)
 
 # obtain "month-year" for bootloader id
 import datetime

@@ -38,7 +38,8 @@ import elib
 from elib import *
 
 script_dir = Path(os.path.dirname(os.path.realpath(__file__)))
-profile_dir = script_dir / "data" / "img"
+data_dir = script_dir / "data" # TODO this should be a global variable
+profile_dir = data_dir / "img" # TODO this should also be a global variable. and separate from data_dir.
 out_dir = Path("out")
 
 # parse cli
@@ -194,25 +195,14 @@ sudo(["mkdir", chroot_boot])
 sudo(["mount", grub_tmp, chroot_boot])
 atexit.register(sudo, ["umount", "--lazy", "--quiet", chroot_boot], ignore_error=True)
 
-# run pacstrap
-sudo(["pacstrap", "-cGM", chroot_fs] + packages)
-chroot(chroot_fs, ["pacman-key", "--init"])
-chroot(chroot_fs, ["pacman-key", "--populate"])
-
-# support for the english language
-sudo(["bash", "-c", f'echo "LANG=en_US.UTF-8" > {chroot_fs / "etc" / "locale.conf"}'])
-sudo(["bash", "-c", f'echo "en_US.UTF-8 UTF-8" > {chroot_fs / "etc" / "locale.gen"}'])
-chroot(["locale-gen"])
-
 # generate a random uuid for each partition
 import uuid
 boot_uuid = str(uuid.uuid4())
 squash_uuid = str(uuid.uuid4())
 overlay_uuid = str(uuid.uuid4())
 
-# copy fstab
-sudo(["cp", script_dir / "data" / "fstab", chroot_fs / "etc"])
-sudo(["sed", "--in-place", f"s/XXX__EFLY_EFI_UUID__XXX/{boot_uuid}/g", chroot_fs / "etc" / "fstab"])
+# run pacstrap
+pacstrap(chroot_fs, packages, boot_uuid, data_dir)
 
 # obtain "month-year" for bootloader id
 import datetime

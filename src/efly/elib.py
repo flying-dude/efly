@@ -1,7 +1,7 @@
 import os, subprocess, atexit, sys, re, math
 from pathlib import Path
 
-__all__ = ["version", "log", "info", "error", "parse_size", "r", "sudo", "chroot", "get", "du", "colored_output"]
+__all__ = ["version", "log", "info", "error", "parse_size", "r", "sudo", "chroot", "get", "du", "colored_output", "pacstrap"]
 
 version = "UNKNOWN_VERSION"
 colored_output = True
@@ -100,3 +100,19 @@ def get(args, **kwargs):
 # obtain disk usage in bytes
 def du(path, **kwargs):
     return int(get(['sudo', 'du','--summarize', '--bytes', path], **kwargs).split()[0])
+
+# use pacstrap to set up a new arch linux install inside the given directory
+# TODO parameter "data_dir" should not be something that needs to be passed here. this should be a global variable.
+def pacstrap(chroot_fs, packages, boot_uuid, data_dir):
+    sudo(["pacstrap", "-cGM", chroot_fs] + packages)
+    chroot(chroot_fs, ["pacman-key", "--init"])
+    chroot(chroot_fs, ["pacman-key", "--populate"])
+
+    # support for the english language
+    sudo(["bash", "-c", f'echo "LANG=en_US.UTF-8" > {chroot_fs / "etc" / "locale.conf"}'])
+    sudo(["bash", "-c", f'echo "en_US.UTF-8 UTF-8" > {chroot_fs / "etc" / "locale.gen"}'])
+    chroot(chroot_fs, ["locale-gen"])
+
+    # copy fstab
+    sudo(["cp", data_dir / "fstab", chroot_fs / "etc"])
+    sudo(["sed", "--in-place", f"s/XXX__EFLY_EFI_UUID__XXX/{boot_uuid}/g", chroot_fs / "etc" / "fstab"])
