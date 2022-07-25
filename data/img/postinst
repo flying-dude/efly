@@ -8,7 +8,7 @@ sed --in-place "s/XXX__EFLY_OVERLAY_UUID__XXX/${EFLY_OVERLAY_UUID}/g" /usr/lib/i
 sed --in-place "s/XXX__EFLY_OVERLAY_UUID__XXX/${EFLY_OVERLAY_UUID}/g" /etc/systemd/system/boot-growfs
 # TODO can we put this into efly-img? it's not really an attribute of the profile...
 # growable root partition is only available on live medium with persistent storage
-if [[ $EFLY_MODE = "live-persistent" ]]
+if [[ $EFLY_MODE = "img" ]]
 then
     systemctl enable boot-growfs.service
 fi

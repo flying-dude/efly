@@ -239,7 +239,7 @@ if postinst_script.is_file():
         EFLY_BOOT_UUID=boot_uuid,
         EFLY_SQUASH_UUID=squash_uuid,
         EFLY_OVERLAY_UUID=overlay_uuid,
-        EFLY_MODE="live-persistent")
+        EFLY_MODE="img")
 
     # cleanup postinst file after running it
     sudo(["rm", chroot_fs / "postinst"])
