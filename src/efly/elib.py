@@ -107,11 +107,7 @@ def pacstrap(chroot_fs, packages, boot_uuid, data_dir):
     sudo(["pacstrap", "-cGM", chroot_fs] + packages)
     chroot(chroot_fs, ["pacman-key", "--init"])
     chroot(chroot_fs, ["pacman-key", "--populate"])
-
-    # support for the english language
-    sudo(["bash", "-c", f'echo "LANG=en_US.UTF-8" > {chroot_fs / "etc" / "locale.conf"}'])
-    sudo(["bash", "-c", f'echo "en_US.UTF-8 UTF-8" > {chroot_fs / "etc" / "locale.gen"}'])
-    chroot(chroot_fs, ["locale-gen"])
+    chroot(chroot_fs, ["locale-gen"]) # not sure if this is even needed.
 
     # copy fstab
     sudo(["cp", data_dir / "fstab", chroot_fs / "etc"])

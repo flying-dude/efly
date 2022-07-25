@@ -195,6 +195,11 @@ sudo(["mkdir", chroot_boot])
 sudo(["mount", grub_tmp, chroot_boot])
 atexit.register(sudo, ["umount", "--lazy", "--quiet", chroot_boot], ignore_error=True)
 
+# copy user-defined filesystem data
+extra_files = profile_dir / "extra"
+if extra_files.is_dir():
+    sudo(["cp", "--recursive", "--no-target-directory", extra_files, chroot_fs])
+
 # generate a random uuid for each partition
 import uuid
 boot_uuid = str(uuid.uuid4())
@@ -221,11 +226,6 @@ chroot(chroot_fs,
         "--recheck",
         "--removable"
     ])
-
-# copy user-defined filesystem data
-extra_files = profile_dir / "extra"
-if extra_files.is_dir():
-    sudo(["cp", "--recursive", "--no-target-directory", extra_files, chroot_fs])
 
 # execute image customization script, if it exists
 postinst_script = profile_dir / "postinst"

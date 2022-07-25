@@ -204,7 +204,7 @@ info(f"boot uuid: {boot_uuid}")
 info(f"root uuid: {root_uuid}")
 print()
 
-# create temporary directory
+# create temporary directory for mounting the block device.
 # https://stackoverflow.com/questions/3223604/how-to-create-a-temporary-directory-and-get-its-path-file-name
 tmp = tempfile.TemporaryDirectory(prefix="efly-dd__")
 atexit.register(tmp.cleanup)
@@ -233,6 +233,11 @@ boot = chroot_fs / "boot"
 sudo(["mkdir", boot])
 sudo(["mount", f"{loop}p1", boot]); atexit.register(sudo, ["umount", boot])
 
+# copy user-defined filesystem data
+extra_files = profile_dir / "extra"
+if extra_files.is_dir():
+    sudo(["cp", "--recursive", "--no-target-directory", extra_files, chroot_fs])
+
 # run pacstrap
 pacstrap(chroot_fs, packages, boot_uuid, data_dir)
 
@@ -256,11 +261,6 @@ chroot(chroot_fs, [
 sudo(["cp", script_dir / "data" / "grub.cfg", boot / "grub"])
 sudo(["sed", "--in-place", f"s/XXX__EFLY_ROOT_UUID__XXX/{root_uuid}/g", boot / "grub" / "grub.cfg"])
 sudo(["sed", "--in-place", f"s/XXX__EFLY_ROOTFSTYPE__XXX/ext4/g", boot / "grub" / "grub.cfg"])
-
-# copy user-defined filesystem data
-extra_files = profile_dir / "extra"
-if extra_files.is_dir():
-    sudo(["cp", "--recursive", "--no-target-directory", extra_files, chroot_fs])
 
 # execute image customization script, if it exists
 postinst_script = profile_dir / "postinst"
