@@ -6,6 +6,12 @@ set -ex
 # register overlay partition in initcpio hook and growfs script
 sed --in-place "s/XXX__EFLY_OVERLAY_UUID__XXX/${EFLY_OVERLAY_UUID}/g" /usr/lib/initcpio/hooks/overlayfs
 sed --in-place "s/XXX__EFLY_OVERLAY_UUID__XXX/${EFLY_OVERLAY_UUID}/g" /etc/systemd/system/boot-growfs
+# TODO can we put this into efly-img? it's not really an attribute of the profile...
+# growable root partition is only available on live medium with persistent storage
+if [[ $EFLY_MODE = "live-persistent" ]]
+then
+    systemctl enable boot-growfs.service
+fi
 
 # create user "efly" with groups suggested in arch wiki:
 # https://wiki.archlinux.org/title/users_and_groups#User_groups
@@ -15,23 +21,10 @@ useradd --no-create-home --groups adm,ftp,games,http,log,rfkill,sys,systemd-jour
 # make sure efly home dir is actually owned by user efly, which we are going to fix here.
 chown --recursive efly:efly /home/efly
 
-# TODO this should happen inside efly-img python script
-# pacstrap will not use our custom mkinitcpio.conf when bootstrapping the system
-# so we delete the files created by mkosi and replace with our own
-rm /boot/initramfs-linux*.img
-mkinitcpio --allpresets
-
 # enable systemd services
 systemctl enable NetworkManager.service
 systemctl enable reflector.service
 systemctl enable bluetooth.service
-
-# TODO can we put this into efly-img? it's not really an attribute of the profile...
-# growable root partition is only available on live medium with persistent storage
-if [[ $EFLY_MODE = "live-persistent" ]]
-then
-    systemctl enable boot-growfs.service
-fi
 
 # install ymerge package manager
 chown --recursive efly:efly /ymerge-PKGBUILD/
