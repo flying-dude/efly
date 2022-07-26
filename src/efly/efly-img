@@ -209,6 +209,9 @@ overlay_uuid = str(uuid.uuid4())
 # run pacstrap
 pacstrap(chroot_fs, packages, boot_uuid, data_dir)
 
+# enable growfs service to expand ext4 partition at boot
+chroot(chroot_fs, ["systemctl", "enable", "boot-growfs.service"])
+
 # obtain "month-year" for bootloader id
 import datetime
 year = datetime.datetime.now().year
