@@ -4,7 +4,8 @@ A graphical live system based on Arch Linux.
 Suitable for installing Arch Linux or as a rescue system for computers without a working operating system.
 How to [flash](docs/flash.md) a USB stick?
 
-The image in [iso format](https://en.wikipedia.org/wiki/Optical_disc_image) has a volatile root file system, which deletes all changes on reboot.
+The image in [iso format](https://en.wikipedia.org/wiki/Optical_disc_image) has a volatile root file system,
+for which changes get lost on reboot.
 The second option is a [raw disk image](https://en.wikipedia.org/wiki/IMG_(file_format)) with persistent storage.
 It will retain changes among reboots.
 

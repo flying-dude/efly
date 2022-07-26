@@ -1,14 +1,14 @@
-Create a bootable raw disk image with persistent storage (read further below on how to increase storage capacity):
+## Create a Bootable Raw Disk Image With Persistent Storage
 
 ```
-sudo pacman --sync dosfstools e2fsprogs squashfs-tools gptfdisk
+sudo pacman --sync python-colorama dosfstools e2fsprogs squashfs-tools gptfdisk
 git clone https://github.com/flying-dude/efly
-cd efly
-./scripts/efly-img
-ls img/out/efly-live.iso # location of the image
+cd efly/src/efly
+./efly-img
+ls out/efly-live.img # location of the image
 ```
 
-# Increase Storage Capacity
+## Increase Storage Capacity
 
 The root partition `/` is an overlayfs with a read-only squashfs partition containing all the data of
 the root partition and a read-write ext4 partition for making changes to the root partition.
@@ -18,5 +18,5 @@ boot. This will probably be multiple GB depending on the size of your stick. If 
 inside a virtual machine like qemu, you increase available size using the `truncate` command:
 
 ```
-$ truncate --size=10G efly-live.img
+truncate --size=10G efly-live.img
 ```

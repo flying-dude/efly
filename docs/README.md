@@ -25,7 +25,54 @@ Size Options:                Unit in M, G or T (KiB, MiB, GiB, TiB resp.) - Exam
   --overlay-size <size>      Set initial size of overlay partition. Will still auto-expand on first boot.
 ```
 
-## Install Directly on a Block Devick
+## Install `efly` Command Using PKGBUILD
+
+To obtain the `efly` command-line tool, you can use the available [PKGBUILD](https://github.com/flying-dude/curated-aur/blob/main/pkg/efly/PKGBUILD):
+
+```
+wget https://raw.githubusercontent.com/flying-dude/curated-aur/main/pkg/efly/PKGBUILD
+makepkg --syncdeps --install
+efly --help
+```
+
+## Clone `git` Repository to Obtain the `efly` Command 
+
+Alternatively, you can simply clone the git repository:
+
+```
+sudo pacman --sync python-colorama dosfstools e2fsprogs squashfs-tools gptfdisk
+git clone https://github.com/flying-dude/efly
+cd efly/src/efly
+./efly --help
+```
+
+## Create a Bootable Raw Disk Image
+
+Use `efly img` to create a bootable raw disk image with persistent storage (read paragraph below on how to increase storage capacity):
+
+```
+efly img
+ls out/efly-live.img # location of the image
+```
+
+This produces a raw disk image, which has a graphical Arch Linux system installed on it.
+You can [put](flash.md) it on a USB stick and boot from it.
+
+### Increase Storage Capacity
+
+The root partition `/` is an overlayfs with a read-only squashfs partition containing all the data of
+the root partition and a read-write ext4 partition for making changes to the root partition.
+
+The ext4 partition has initially a tiny size of 4MB but is programmed to grow to maximum available size at first
+boot. This will probably be multiple GB depending on the size of your stick. If you want to boot the image
+inside a virtual machine like qemu, you should first increase available size using the `truncate` command:
+
+```
+truncate --size=10G efly-live.img
+efly qemu --uefi efly-live.img
+```
+
+## Set up an Efly System on a Block Devick
 
 You can use `efly dd` to install a preconfigured Arch Linux system directly on a given block device (keep in mind that this will wipe all data on that block device):
 
@@ -41,25 +88,6 @@ efly dd myimage.img
 ```
 
 Installations created using `efly dd` have only two partitions: One EFI boot partition and one `ext4` root partition.
-
-## Install efly Command Using PKGBUILD
-
-To obtain the `efly` command-line tool, you can use the available [PKGBUILD](https://github.com/flying-dude/curated-aur/blob/main/pkg/efly/PKGBUILD):
-
-```
-wget https://raw.githubusercontent.com/flying-dude/curated-aur/main/pkg/efly/PKGBUILD
-makepkg --syncdeps --install
-efly --help
-```
-
-Alternatively, you can simply clone the git repository:
-
-```
-sudo pacman --sync python-colorama dosfstools e2fsprogs squashfs-tools gptfdisk
-git clone https://github.com/flying-dude/efly
-cd efly/src/efly
-./efly --help
-```
 
 ## Packaging
 
@@ -95,3 +123,7 @@ What exactly happens, when you place the same image on multiple USB sticks?
 That has not been tested for UUIDs.
 But in the case of identical partition labels, the kernel will happily boot from one device and use the root partition from another one.
 So at least there is no runtime error in that case. :-)
+
+## Links
+
+* [USB flash installation medium](https://wiki.archlinux.org/title/USB_flash_installation_medium)
