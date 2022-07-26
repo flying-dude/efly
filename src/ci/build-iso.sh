@@ -8,7 +8,7 @@ echo groups: $(groups)
 echo working directory: $(pwd)
 
 echo
-ls -hla
+ls -ahl
 echo
 
 wget --no-verbose http://ftp.snt.utwente.nl/pub/os/linux/archlinux/iso/2022.07.01/archlinux-bootstrap-2022.07.01-x86_64.tar.gz
@@ -44,7 +44,7 @@ chroot image /bin/bash -c "pacman --sync --refresh --refresh --sysupgrade --sysu
 chroot image /bin/bash -c "pacman --sync --noconfirm archiso"
 
 # create the iso file
-cp --recursive data/iso/ image/ # copy archiso config into chroot
+cp --recursive data/profiles/iso/ image/ # copy archiso config into chroot
 cp --remove-destination data/img/packages.txt image/iso/packages.x86_64 # iso packages is just a symlink. copy real file.
 chroot image /bin/bash -c "mkarchiso -v /iso" # image/out/efly-live-2022.05.13-x86_64.iso
 mv image/out/*.iso efly-live.iso
