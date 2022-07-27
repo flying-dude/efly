@@ -195,16 +195,21 @@ sudo(["mkdir", chroot_boot])
 sudo(["mount", grub_tmp, chroot_boot])
 atexit.register(sudo, ["umount", "--lazy", "--quiet", chroot_boot], ignore_error=True)
 
-# copy user-defined filesystem data
-extra_files = profile_dir / "extra"
-if extra_files.is_dir():
-    sudo(["cp", "--recursive", "--no-target-directory", extra_files, chroot_fs])
-
 # generate a random uuid for each partition
 import uuid
 boot_uuid = str(uuid.uuid4())
 squash_uuid = str(uuid.uuid4())
 overlay_uuid = str(uuid.uuid4())
+
+# copy config files for overlayfs
+sudo(["cp", "--recursive", "--no-target-directory", data_dir / "overlayfs-config", chroot_fs])
+sudo(["sed", "--in-place", f"s/XXX__EFLY_OVERLAY_UUID__XXX/{overlay_uuid}/g", chroot_fs / "usr" / "lib" / "initcpio" / "hooks" / "overlayfs"])
+sudo(["sed", "--in-place", f"s/XXX__EFLY_OVERLAY_UUID__XXX/{overlay_uuid}/g", chroot_fs / "etc" / "systemd" / "system" / "boot-growfs"])
+
+# copy user-defined filesystem data
+extra_files = profile_dir / "extra"
+if extra_files.is_dir():
+    sudo(["cp", "--recursive", "--no-target-directory", extra_files, chroot_fs])
 
 # run pacstrap
 pacstrap(chroot_fs, packages, boot_uuid, data_dir)

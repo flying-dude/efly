@@ -2,11 +2,6 @@
 
 set -ex
 
-# TODO run these commands from efly-img and move it out of the profile
-# register overlay partition in initcpio hook and growfs script
-sed --in-place "s/XXX__EFLY_OVERLAY_UUID__XXX/${EFLY_OVERLAY_UUID}/g" /usr/lib/initcpio/hooks/overlayfs
-sed --in-place "s/XXX__EFLY_OVERLAY_UUID__XXX/${EFLY_OVERLAY_UUID}/g" /etc/systemd/system/boot-growfs
-
 # have user root use fish as login shell
 usermod --shell /bin/fish root
 
