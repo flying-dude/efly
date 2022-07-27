@@ -4,27 +4,31 @@
 import os, subprocess, json
 from pathlib import Path
 
-partition = Path("/dev/disk/by-partuuid/XXX__EFLY_OVERLAY_UUID__XXX")
+uuid = "XXX__EFLY_OVERLAY_UUID__XXX" # this placeholder will be replaced with correct uuid during image creation.
+partition = Path(f"/dev/disk/by-partuuid/{uuid}")
 
 if not partition.is_symlink():
     print(f"error. could not find overlay partition: {partition}")
     exit(1)
 
-read_symlink = os.path.realpath(partition)
-part = os.path.basename(read_symlink)
+# previously used alternative way to obtain block device from partition identifier inside /dev
+# variable read_symlink is still used for error reporting below
+read_symlink = os.path.realpath(partition) # /dev/sda3
+part_id = os.path.basename(read_symlink) # sda3
 
-lsblk = subprocess.check_output(["lsblk", "--json"]).decode('utf-8').rstrip()
+lsblk = subprocess.check_output(["lsblk", "--json", "-o", "+PARTUUID"]).decode('utf-8').rstrip()
 lsblk = json.loads(lsblk)
 
 device = None
 for blockdevice in lsblk["blockdevices"]:
     if "children" in blockdevice:
         for child in blockdevice["children"]:
-            if child["name"] == part:
+            #if child["name"] == part_id:
+            if child["partuuid"] == uuid:
                 device = blockdevice["name"]
 
 if not device:
-    print(f"error. could not find blockdevice for partition '{part}'.")
+    print(f"error. could not find block device for partition '{read_symlink}' with partuuid '{uuid}'.")
     exit(1)
 
 device = Path(f"/dev/{device}")
@@ -34,5 +38,5 @@ def s(cmd):
     return os.system(cmd)
 
 s(f"growpart {device} 3")
-s(f"e2fsck -fy {partition}")
+s(f"e2fsck -fy {partition}") # note: why do we run fsck here? is it a prerequisite for resize2fs?
 s(f"resize2fs {partition}")

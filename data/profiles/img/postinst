@@ -15,7 +15,7 @@ usermod --shell /bin/fish root
 # note: not creating home. it already exists in "img/extra/" and "/etc/skel" has already been copied.
 useradd --no-create-home --groups adm,ftp,games,http,log,rfkill,sys,systemd-journal,uucp,wheel efly
 
-# make sure efly home dir is actually owned by user efly, which we are going to fix here.
+# make sure efly home dir is actually owned by user efly
 chown --recursive efly:efly /home/efly
 
 # enable systemd services
