@@ -81,13 +81,11 @@ ninja
 
 # packages from arch linux releng config
 alsa-utils
-amd-ucode
 arch-install-scripts
 archinstall
 b43-fwcutter
 base
 bind
-broadcom-wl
 btrfs-progs
 clonezilla
 cloud-init
@@ -117,7 +115,6 @@ gptfdisk
 grub
 hdparm
 hyperv
-intel-ucode
 ipw2100-fw
 ipw2200-fw
 irssi
@@ -129,10 +126,6 @@ less
 lftp
 libfido2
 libusb-compat
-linux
-linux-atm
-linux-firmware
-linux-firmware-marvell
 lsscsi
 lvm2
 lynx
@@ -141,9 +134,6 @@ man-pages
 mc
 mdadm
 memtest86+
-mkinitcpio
-mkinitcpio-archiso
-mkinitcpio-nfs-utils
 modemmanager
 mtools
 nbd
@@ -190,7 +180,6 @@ udftools
 usb_modeswitch
 usbmuxd
 usbutils
-virtualbox-guest-utils-nox
 vpnc
 wireless-regdb
 wireless_tools

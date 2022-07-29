@@ -19,9 +19,12 @@ A profile currently consists of the following components:
 [`pacstrap`](https://man.archlinux.org/man/pacstrap.8). You can put your personal configuration and additional scripts into that folder.
 * [`postinst`](https://github.com/flying-dude/efly/blob/main/data/img/postinst): A script that will be executed inside a chroot after copying the `extra` files. Use this script for some additional tweaking of our disk image.
 
-## Two Build Modes `efly-img` and `efly-dd`
+## Install Modes
 
-There are two modes, in which efly profiles can be built.
+There are three install modes, in which efly profiles can be built:
+[`efly-img`](https://github.com/flying-dude/efly/blob/main/src/efly/efly-img),
+[`efly-dd`](https://github.com/flying-dude/efly/blob/main/src/efly/efly-dd),
+[`efly-pacstrap`](https://github.com/flying-dude/efly/blob/main/src/efly/efly-pacstrap)
 
 When used with
 [`efly-img`](https://github.com/flying-dude/efly/blob/main/src/efly/efly-img),
@@ -36,6 +39,11 @@ The second mode is
 where all data except `/boot` is written to a single `ext4` partition.
 There is no overlayfs nor squashfs.
 Use this mode to quickly set up a fresh, preconfigured Arch Linux system, that boots directly into a graphical environment with shell, browser, etc. immediately available.
+
+The third mode
+[`efly-pacstrap`](https://github.com/flying-dude/efly/blob/main/src/efly/efly-pacstrap)
+will simply set up an Arch Linux system inside a directory, that you can chroot into or use for containers.
+It will not install a linux kernel in this case.
 
 ## The `postinst` Script
 
@@ -52,12 +60,20 @@ For `efly-img`, this script will run before compression of the root file system 
 That means changes made with this script are stored on the compressed squashfs partition.
 Since `efly-dd` has no squashfs partition, all data except EFI boot partition is stored on the same `ext4` partition.
 
-A number of environment variables are passed to the `postinst` script:
+A number of environment variables are passed to the `postinst` script, depening on the install mode:
 
-* `EFLY_BOOT_UUID`: PARTUUID of the EFI boot partition.
-* `EFLY_SQUASH_UUID`: PARTUUID of the squashfs partition. Only declared for `efly-img` and not defined for `efly-dd`, since it has no squashfs partition.
-* `EFLY_OVERLAY_UUID`: PARTUUID of the `ext4` overlay partition. Only present in `efly-img`.
-* `EFLY_ROOT_UUID`: PARTUUID of the `ext4` root partition. Only present in `efly-dd`.
-* `EFLY_MODE`: Helps the `postinst` script to distinguish between `efly-img` mode and `efly-dd` mode.
-	- `EFLY_MODE=img` for `efly-img`
-	- `EFLY_MODE=dd` for `efly-dd`
+* `efly-img`:
+  * `EFLY_BOOT_UUID`: PARTUUID of the EFI boot partition.
+  * `EFLY_SQUASH_UUID`: PARTUUID of the squashfs partition.
+  * `EFLY_OVERLAY_UUID`: PARTUUID of the `ext4` overlay partition.
+* `efly-img`:
+  * `EFLY_BOOT_UUID`: PARTUUID of the EFI boot partition.
+  * `EFLY_ROOT_UUID`: PARTUUID of the `ext4` root partition.
+* `efly-pacstrap`:
+  * *(no uuids created and therefore no environment variables passed for it)*
+
+Additionally, a variable `EFLY_MODE` helps the `postinst` script to distinguish between install modes:
+
+* `EFLY_MODE=img` for `efly-img`
+* `EFLY_MODE=dd` for `efly-dd`
+* `EFLY_MODE=pacstrap` for `efly-pacstrap`

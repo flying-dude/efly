@@ -102,13 +102,16 @@ def du(path, **kwargs):
     return int(get(['sudo', 'du','--summarize', '--bytes', path], **kwargs).split()[0])
 
 # use pacstrap to set up a new arch linux install inside the given directory
-# TODO parameter "data_dir" should not be something that needs to be passed here. this should be a global variable.
-def pacstrap(chroot_fs, packages, boot_uuid, data_dir):
+def pacstrap(chroot_fs, packages, install_linux=True):
+    if install_linux:
+        packages = packages + [
+            "linux", "linux-atm", "linux-firmware", "linux-firmware-marvell",
+            "mkinitcpio", "mkinitcpio-archiso", "mkinitcpio-nfs-utils",
+            "amd-ucode", "intel-ucode",
+            "broadcom-wl", "virtualbox-guest-utils-nox"
+        ]
+
     sudo(["pacstrap", "-cGM", chroot_fs] + packages)
     chroot(chroot_fs, ["pacman-key", "--init"])
     chroot(chroot_fs, ["pacman-key", "--populate"])
     chroot(chroot_fs, ["locale-gen"]) # not sure if this is even needed.
-
-    # copy fstab
-    sudo(["cp", data_dir / "fstab", chroot_fs / "etc"])
-    sudo(["sed", "--in-place", f"s/XXX__EFLY_EFI_UUID__XXX/{boot_uuid}/g", chroot_fs / "etc" / "fstab"])

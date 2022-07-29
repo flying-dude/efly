@@ -1,0 +1,169 @@
+#!/usr/bin/python
+
+usage = f"""
+Usage: efly pacstrap [options] <path>
+
+Create an Arch Linux system inside a folder, that you can chroot into.
+
+General Options:
+  -h --help                  Show this screen.
+  -v --version               Print version info.
+
+  --profile <profile-dir>    Use a custom profile instead of default profile.
+
+  --nocolor                  Deactivate colored output.
+  --shell                    Launch an interactive shell after running the postinst script.
+                             Can be used instead of doing an extra chroot after install.
+""".lstrip().rstrip()
+
+import os, subprocess, atexit, sys, re, math, tempfile
+from pathlib import Path
+
+# https://stackoverflow.com/questions/6598053/python-global-exception-handling
+import sys
+def my_except_hook(exctype, value, traceback):
+    if exctype == KeyboardInterrupt:
+        print("Program interrupted via keyboard.")
+    else:
+        sys.__excepthook__(exctype, value, traceback)
+sys.excepthook = my_except_hook
+
+import elib
+from elib import *
+
+script_dir = Path(os.path.dirname(os.path.realpath(__file__)))
+data_dir = script_dir / "data" # TODO this should be a global variable
+profile_dir = data_dir / "profiles" / "img" # TODO this should also be a global variable. and separate from data_dir.
+
+# parse cli
+path = None
+flag_shell = False
+args = sys.argv[1:]
+while args:
+    if args[0] == "-h" or args[0] == "--help":
+        print(usage)
+        exit(0)
+
+    if args[0] == "-v" or args[0] == "--version":
+        print(version)
+        exit(0)
+
+        args = args[2:]
+        continue
+
+    if args[0] == "--profile":
+        if len(args) < 2:
+            error('missing argument for cli flag "--profile"')
+            exit(1)
+        else:
+            profile_dir = Path(args[1])
+            args = args[2:]
+            continue
+
+    if args[0] == "--nocolor":
+        elib.colored_output = False
+        args = args[1:]
+        continue
+
+    if args[0] == "--shell":
+        flag_shell = True
+        args = args[1:]
+        continue
+
+    path = args[0]
+    info(f"installing into path: {path}")
+
+    args = args[1:]
+    if args:
+        error(f'excess arguments: {args}')
+        exit(1)
+
+if not path:
+    error("no path specified.")
+    exit(1)
+
+# list of required shell commands together with their corresponding packages
+cmd2pkg = [
+    ("arch-chroot", "arch-install-scripts"),
+    ("pacstrap", "arch-install-scripts"),
+    ("sudo", "sudo")]
+
+# check for presence of required shell commands
+from shutil import which
+missing_pkg = False
+for cmd, pkg in cmd2pkg:
+    if which(cmd) is None:
+        error(f"missing shell command '{cmd}'. if running arch linux, install with: pacman --sync {pkg}")
+        missing_pkg = True
+
+# abort if we are missing some shell commands
+if missing_pkg:
+    error("exiting due to missing shell command.")
+    exit(1)
+
+# check if config dir is present
+if not profile_dir.is_dir():
+    error(f'profile folder not present: "{profile_dir}"')
+    exit(1)
+
+# check for presence of package list
+package_txt = profile_dir / "packages.txt"
+if not package_txt.is_file():
+    error(f'package file not found: "{packages_txt}"')
+    exit(1)
+
+# read and parse list of packages
+packages = []
+with open(package_txt) as lines:
+    for line in lines:
+        line = line.rstrip()
+        if len(line) == 0:
+            continue
+
+        line = line.split('#')[0]
+        if len(line) == 0:
+            continue
+
+        line = line.split(' ')
+        for pkg in line:
+            if len(pkg) == 0:
+                continue
+            packages.append(pkg)
+
+# set up data dir. we run pacstrap here. this should be owned by root to avoid pacman reporting warning.
+chroot_fs = Path(path)
+if not chroot_fs.exists():
+    sudo(["mkdir", chroot_fs])
+
+# copy user-defined filesystem data
+extra_files = profile_dir / "extra"
+if extra_files.is_dir():
+    sudo(["cp", "--recursive", "--no-target-directory", extra_files, chroot_fs])
+
+# run pacstrap
+pacstrap(chroot_fs, packages, install_linux = False)
+
+# execute image customization script, if it exists
+postinst_script = profile_dir / "postinst"
+if postinst_script.is_file():
+    # copy files
+    sudo(["cp", postinst_script, chroot_fs])
+    sudo(["chmod", "+x", chroot_fs / "postinst"])
+
+    # exec postinst inside chroot
+    chroot(chroot_fs, ["/postinst"], EFLY_MODE="pacstrap")
+
+    # cleanup postinst file after running it
+    sudo(["rm", chroot_fs / "postinst"])
+
+# hop into a shell, if requested by the user.
+if flag_shell:
+    if (chroot_fs / "bin" / "fish").is_file():
+        chroot(chroot_fs, ["/bin/fish", "--private"]) # launch fish but do not store any history
+    elif (chroot_fs / "bin" / "bash").is_file():
+        chroot(chroot_fs, ["/bin/bash"])
+    elif (chroot_fs / "bin" / "sh").is_file():
+        chroot(chroot_fs, ["/bin/sh"])
+    else:
+        error('cli flag "--shell" was specified but could not find a shell at /bin/fish, /bin/bash or /bin/sh')
+        exit(1)

@@ -239,7 +239,11 @@ if extra_files.is_dir():
     sudo(["cp", "--recursive", "--no-target-directory", extra_files, chroot_fs])
 
 # run pacstrap
-pacstrap(chroot_fs, packages, boot_uuid, data_dir)
+pacstrap(chroot_fs, packages)
+
+# copy fstab
+sudo(["cp", data_dir / "fstab", chroot_fs / "etc"])
+sudo(["sed", "--in-place", f"s/XXX__EFLY_EFI_UUID__XXX/{boot_uuid}/g", chroot_fs / "etc" / "fstab"])
 
 # obtain "month-year" for bootloader id
 import datetime
