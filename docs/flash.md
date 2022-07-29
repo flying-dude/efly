@@ -52,3 +52,16 @@ Therefore, I always run **`sync`** in order to make sure the writes are complete
 $ man sync
 sync - Synchronize cached writes to persistent storage
 ```
+
+## Graphical Tools
+
+There are various graphical tools available for flashing USB sticks:
+
+* balenaEtcher: https://www.balena.io/etcher/
+  * Wikipedia Article: https://en.wikipedia.org/wiki/Etcher_(software)
+* Ubuntu Startup Disk Creator: https://ubuntu.com/tutorials/create-a-usb-stick-on-ubuntu
+  * AUR Package: https://aur.archlinux.org/packages/usb-creator
+  * Wikipedia Article: https://en.wikipedia.org/wiki/Startup_Disk_Creator
+* Fedora Media Writer: https://github.com/FedoraQt/MediaWriter
+  * AUR Package: https://aur.archlinux.org/packages/mediawriter
+  * Wikipedia Article: https://en.wikipedia.org/wiki/Fedora_Media_Writer
