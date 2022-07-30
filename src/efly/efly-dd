@@ -233,6 +233,10 @@ boot = chroot_fs / "boot"
 sudo(["mkdir", boot])
 sudo(["mount", f"{loop}p1", boot]); atexit.register(sudo, ["umount", boot])
 
+# copy mkinitcpio.conf
+sudo(["mkdir", chroot_fs / "etc"])
+sudo(["cp", data_dir / "mkinitcpio-dd.conf", chroot_fs / "etc" / "mkinitcpio.conf"])
+
 # copy user-defined filesystem data
 extra_files = profile_dir / "extra"
 if extra_files.is_dir():

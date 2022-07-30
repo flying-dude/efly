@@ -206,6 +206,9 @@ sudo(["cp", "--recursive", "--no-target-directory", data_dir / "overlayfs-config
 sudo(["sed", "--in-place", f"s/XXX__EFLY_OVERLAY_UUID__XXX/{overlay_uuid}/g", chroot_fs / "usr" / "lib" / "initcpio" / "hooks" / "overlayfs"])
 sudo(["sed", "--in-place", f"s/XXX__EFLY_OVERLAY_UUID__XXX/{overlay_uuid}/g", chroot_fs / "etc" / "systemd" / "system" / "boot-growfs"])
 
+# copy mkinitcpio.conf
+sudo(["cp", data_dir / "mkinitcpio-img.conf", chroot_fs / "etc" / "mkinitcpio.conf"])
+
 # copy user-defined filesystem data
 extra_files = profile_dir / "extra"
 if extra_files.is_dir():
