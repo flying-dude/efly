@@ -1,0 +1,4 @@
+PARTUUID=XXX__EFLY_ROOT_UUID__XXX / ext4 rw,relatime 0 1
+PARTUUID=XXX__EFLY_EFI_UUID__XXX /boot vfat defaults 0 1
+tmpfs /tmp tmpfs defaults,noatime,mode=1777 0 0
+tmpfs /var/tmp tmpfs defaults,noatime,mode=1777 0 0

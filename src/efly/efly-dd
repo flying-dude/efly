@@ -237,6 +237,11 @@ sudo(["mount", f"{loop}p1", boot]); atexit.register(sudo, ["umount", boot])
 sudo(["mkdir", chroot_fs / "etc"])
 sudo(["cp", data_dir / "mkinitcpio-dd.conf", chroot_fs / "etc" / "mkinitcpio.conf"])
 
+# copy fstab
+sudo(["cp", data_dir / "fstab-dd", chroot_fs / "etc" / "fstab"])
+sudo(["sed", "--in-place", f"s/XXX__EFLY_ROOT_UUID__XXX/{root_uuid}/g", chroot_fs / "etc" / "fstab"])
+sudo(["sed", "--in-place", f"s/XXX__EFLY_EFI_UUID__XXX/{boot_uuid}/g", chroot_fs / "etc" / "fstab"])
+
 # copy user-defined filesystem data
 extra_files = profile_dir / "extra"
 if extra_files.is_dir():
@@ -244,10 +249,6 @@ if extra_files.is_dir():
 
 # run pacstrap
 pacstrap(chroot_fs, packages)
-
-# copy fstab
-sudo(["cp", data_dir / "fstab", chroot_fs / "etc"])
-sudo(["sed", "--in-place", f"s/XXX__EFLY_EFI_UUID__XXX/{boot_uuid}/g", chroot_fs / "etc" / "fstab"])
 
 # obtain "month-year" for bootloader id
 import datetime
