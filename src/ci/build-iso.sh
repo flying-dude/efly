@@ -27,9 +27,6 @@ mount --rbind /sys sys
 mount --rbind /dev dev
 cd ..
 
-chroot image /bin/bash -c "pacman-key --init"
-chroot image /bin/bash -c "pacman-key --populate archlinux"
-
 # the archlinux-bootstrap data has all pacman mirrors deactivated. need to activate mirrors for pacman to work
 # can consider using reflector here?
 chroot image /bin/bash -c "sed -i 's/^#Server/Server/' /etc/pacman.d/mirrorlist"
@@ -39,13 +36,20 @@ chroot image /bin/bash -c "sed -i 's/^#Server/Server/' /etc/pacman.d/mirrorlist"
 # https://gist.github.com/neonb88/5ba848f1aef21ab67c7a4ff28e6d2ea3
 chroot image /bin/bash -c "sed -i 's/^CheckSpace/#CheckSpace/' /etc/pacman.conf"
 
+chroot image /bin/bash -c "pacman-key --init"
+chroot image /bin/bash -c "pacman-key --populate archlinux"
+
+# 3 august 2022: this one fixed keyring error in ci build:
+# https://www.reddit.com/r/EndeavourOS/comments/w5bla5/cant_update_invalid_or_corrupted_package/
+chroot image /bin/bash -c "pacman -Sy --noconfirm archlinux-keyring"
+
 # install the "archiso" package
 chroot image /bin/bash -c "pacman --sync --refresh --refresh --sysupgrade --sysupgrade --noconfirm"
 chroot image /bin/bash -c "pacman --sync --noconfirm archiso"
 
 # create the iso file
 cp --recursive data/profiles/iso/ image/ # copy archiso config into chroot
-cp --remove-destination data/img/packages.txt image/iso/packages.x86_64 # iso packages is just a symlink. copy real file.
+cp --remove-destination data/profiles/img/packages.txt image/iso/packages.x86_64 # iso packages is just a symlink. copy real file.
 chroot image /bin/bash -c "mkarchiso -v /iso" # image/out/efly-live-2022.05.13-x86_64.iso
 mv image/out/*.iso efly-live.iso
 

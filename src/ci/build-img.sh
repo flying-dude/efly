@@ -27,9 +27,6 @@ mount --rbind /sys sys
 mount --rbind /dev dev
 cd ..
 
-chroot image /bin/bash -c "pacman-key --init"
-chroot image /bin/bash -c "pacman-key --populate archlinux"
-
 # the archlinux-bootstrap data has all pacman mirrors deactivated. need to activate mirrors for pacman to work
 # can consider using reflector here?
 chroot image /bin/bash -c "sed -i 's/^#Server/Server/' /etc/pacman.d/mirrorlist"
@@ -38,6 +35,13 @@ chroot image /bin/bash -c "sed -i 's/^#Server/Server/' /etc/pacman.d/mirrorlist"
 # fixes a pacman error that occurs inside chroot: "error: failed to commit transaction (not enough free disk space)"
 # https://gist.github.com/neonb88/5ba848f1aef21ab67c7a4ff28e6d2ea3
 chroot image /bin/bash -c "sed -i 's/^CheckSpace/#CheckSpace/' /etc/pacman.conf"
+
+chroot image /bin/bash -c "pacman-key --init"
+chroot image /bin/bash -c "pacman-key --populate"
+
+# 3 august 2022: this one fixed keyring error in ci build:
+# https://www.reddit.com/r/EndeavourOS/comments/w5bla5/cant_update_invalid_or_corrupted_package/
+chroot image /bin/bash -c "pacman -Sy --noconfirm archlinux-keyring"
 
 # install packages
 chroot image /bin/bash -c "pacman --sync --refresh --refresh --sysupgrade --sysupgrade --noconfirm"
