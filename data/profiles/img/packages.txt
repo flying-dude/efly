@@ -39,6 +39,7 @@ tk
 bat
 htop
 ncdu
+restic
 ripgrep
 unzip
 wget
@@ -116,8 +117,6 @@ gptfdisk
 grub
 hdparm
 hyperv
-ipw2100-fw
-ipw2200-fw
 irssi
 iw
 iwd
