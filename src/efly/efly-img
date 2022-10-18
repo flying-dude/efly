@@ -3,8 +3,8 @@
 usage = f"""
 Usage: efly img [options]
 
-Create raw disk images for live systems bootable from a USB flash drive.
-The live system has persistent storage and will retain changes among reboots.
+Create a bootable live system, that can be placed on a USB flash drive.
+It has persistent storage and will retain changes among reboots. Requires a UEFI system for booting.
 
 General Options:
   -h --help                  Show this screen.
@@ -172,7 +172,6 @@ with open(package_txt) as lines:
             packages.append(pkg)
 
 # create output directory
-# TODO error handling in case creating dir fails
 out_dir.mkdir(exist_ok=True, parents=True)
 
 # set up data dir. we run pacstrap here. this should be owned by root to avoid pacman reporting warning.
@@ -287,10 +286,11 @@ efly_live_sfs = out_dir / "efly-live.sfs"
 if efly_live_sfs.is_file():
     info(f"skipping mksquashfs. squashfs file already exists: {efly_live_sfs}")
 else:
-    # Creating a highly compressed SquashFS from a folder
+    # create a highly compressed squashfs archive
     # https://techoverflow.net/2013/01/11/creating-a-highly-compressed-squashfs-from-a-folder/
     sudo(["mksquashfs", chroot_fs, efly_live_sfs, "-b", "1048576", "-comp", "xz", "-Xdict-size", "100%"])
 
+    # for testing: faster compression with lz4
     # https://unix.stackexchange.com/questions/256898/squashfs-minimal-compression
     #sudo(["mksquashfs", chroot_fs, efly_live_sfs, "-comp", "lz4"])
 
