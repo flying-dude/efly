@@ -102,14 +102,16 @@ def du(path, **kwargs):
     return int(get(['sudo', 'du','--summarize', '--bytes', path], **kwargs).split()[0])
 
 # use pacstrap to set up a new arch linux install inside the given directory
-def pacstrap(chroot_fs, packages, install_linux=True):
-    if install_linux:
-        packages = packages + [
+def pacstrap(chroot_fs, packages, bootable=True):
+    if bootable:
+        boot_pkg = [
             "linux", "linux-atm", "linux-firmware", "linux-firmware-marvell",
             "mkinitcpio", "mkinitcpio-archiso", "mkinitcpio-nfs-utils",
             "amd-ucode", "intel-ucode",
             "broadcom-wl", "virtualbox-guest-utils-nox"
         ]
+        info(f"Creating a bootable system. This will install the following extra packages: {boot_pkg}")
+        packages = packages + boot_pkg
 
     sudo(["pacstrap", "-cGM", chroot_fs] + packages)
     chroot(chroot_fs, ["pacman-key", "--init"])

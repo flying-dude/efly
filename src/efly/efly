@@ -11,9 +11,9 @@ Version: {version}
 Create and manage bootable disk images based on Arch Linux.
 
 Subcommands:
-  efly dd        :: Install Arch Linux on a block device.
+  efly dd        :: Install Arch Linux directly on a block device.
   efly img       :: Create a bootable raw disk image.
-  efly pacstrap  :: Create an Arch Linux system inside a folder, that you can chroot into.
+  efly pacstrap  :: Bootstrap an Arch Linux system inside a folder.
   efly qemu      :: Boot a disk image using qemu.
   efly vncserver :: Launch a VNC server using TigerVNC.
 """.lstrip().rstrip()

@@ -141,7 +141,7 @@ if extra_files.is_dir():
     sudo(["cp", "--recursive", "--no-target-directory", extra_files, chroot_fs])
 
 # run pacstrap
-pacstrap(chroot_fs, packages, install_linux = False)
+pacstrap(chroot_fs, packages, bootable = False)
 
 # execute image customization script, if it exists
 postinst_script = profile_dir / "postinst"
