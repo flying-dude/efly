@@ -1,7 +1,10 @@
 # window manager and desktop environment
 xorg-server
 xorg-xinit
+
 xfce4
+xfce4-whiskermenu-plugin
+xfce4-pulseaudio-plugin
 
 # gvfs this needs to be installed, so that removable devices
 # are shown in xfce and thunar file manager
@@ -16,7 +19,6 @@ gvfs-mtp
 gnome-disk-utility
 
 # audio stuff
-xfce4-pulseaudio-plugin
 pulseaudio
 pulseaudio-alsa
 pavucontrol

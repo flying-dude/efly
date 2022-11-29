@@ -34,9 +34,7 @@
     </property>
   </property>
   <property name="plugins" type="empty">
-    <property name="plugin-1" type="string" value="applicationsmenu">
-      <property name="show-button-title" type="bool" value="false"/>
-    </property>
+    <property name="plugin-1" type="string" value="whiskermenu"/>
     <property name="plugin-2" type="string" value="tasklist">
       <property name="grouping" type="uint" value="0"/>
     </property>
