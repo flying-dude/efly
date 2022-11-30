@@ -52,6 +52,9 @@
         <value type="string" value="networkmanager applet"/>
         <value type="string" value="ethernet network connection “wired connection 1” active"/>
       </property>
+      <property name="known-items" type="array">
+        <value type="string" value="Otter"/>
+      </property>
     </property>
     <property name="plugin-9" type="string" value="power-manager-plugin"/>
     <property name="plugin-11" type="string" value="separator">
@@ -59,7 +62,7 @@
     </property>
     <property name="plugin-12" type="string" value="clock">
       <property name="mode" type="uint" value="2"/>
-      <property name="digital-format" type="string" value="%_H:%M"/>
+      <property name="digital-format" type="string" value="%I:%M %p"/>
     </property>
     <property name="plugin-13" type="string" value="separator">
       <property name="style" type="uint" value="0"/>
@@ -83,7 +86,7 @@
     </property>
     <property name="plugin-8" type="string" value="launcher">
       <property name="items" type="array">
-        <value type="string" value="16532112181.desktop"/>
+        <value type="string" value="16698368321.desktop"/>
       </property>
     </property>
   </property>

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Otter Browser
+Comment=Browse the Web
+Exec=otter-browser %u
+Icon=otter-browser
+Path=
+Terminal=false
+StartupNotify=false

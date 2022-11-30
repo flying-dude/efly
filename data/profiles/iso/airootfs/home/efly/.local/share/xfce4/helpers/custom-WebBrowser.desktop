@@ -1,0 +1,15 @@
+# this helper is used by xfce4 to register otter as the default browser.
+# otter is not registered as a web browser at system level.
+# therefore we need to fall back to defining a "custom" command for the web browser.
+
+[Desktop Entry]
+NoDisplay=true
+Version=1.0
+Encoding=UTF-8
+Type=X-XFCE-Helper
+X-XFCE-Category=WebBrowser
+X-XFCE-CommandsWithParameter=otter-browser "%s"
+Icon=otter-browser
+Name=otter-browser
+X-XFCE-Commands=otter-browser
+

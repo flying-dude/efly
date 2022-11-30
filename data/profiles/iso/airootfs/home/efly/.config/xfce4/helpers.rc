@@ -1,2 +1,3 @@
-WebBrowser=firefox
-
+# define custom command in order to register otter-browser as the default web browser in xfce4
+# see: /home/efly/.local/share/xfce4/helpers/custom-WebBrowser.desktop
+WebBrowser=custom-WebBrowser
