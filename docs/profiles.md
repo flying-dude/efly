@@ -24,7 +24,6 @@ A profile currently consists of the following components:
 There are three install modes, in which efly profiles can be built:
 [`efly-img`](https://github.com/flying-dude/efly/blob/main/src/efly/efly-img),
 [`efly-dd`](https://github.com/flying-dude/efly/blob/main/src/efly/efly-dd),
-[`efly-pacstrap`](https://github.com/flying-dude/efly/blob/main/src/efly/efly-pacstrap)
 
 When used with
 [`efly-img`](https://github.com/flying-dude/efly/blob/main/src/efly/efly-img),
@@ -39,11 +38,6 @@ The second mode is
 where all data except `/boot` is written to a single `ext4` partition.
 There is no overlayfs nor squashfs.
 Use this mode to quickly set up a fresh, preconfigured Arch Linux system, that boots directly into a graphical environment with shell, browser, etc. immediately available.
-
-The third mode
-[`efly-pacstrap`](https://github.com/flying-dude/efly/blob/main/src/efly/efly-pacstrap)
-will simply set up an Arch Linux system inside a directory, that you can chroot into or use for containers.
-It will not install a linux kernel in this case.
 
 ## The `postinst` Script
 
@@ -66,14 +60,11 @@ A number of environment variables are passed to the `postinst` script, depening 
   * `EFLY_BOOT_UUID`: PARTUUID of the EFI boot partition.
   * `EFLY_SQUASH_UUID`: PARTUUID of the squashfs partition.
   * `EFLY_OVERLAY_UUID`: PARTUUID of the `ext4` overlay partition.
-* `efly-img`:
+* `efly-dd`:
   * `EFLY_BOOT_UUID`: PARTUUID of the EFI boot partition.
   * `EFLY_ROOT_UUID`: PARTUUID of the `ext4` root partition.
-* `efly-pacstrap`:
-  * *(no uuids created and therefore no environment variables passed for it)*
 
 Additionally, a variable `EFLY_MODE` helps the `postinst` script to distinguish between install modes:
 
 * `EFLY_MODE=img` for `efly-img`
 * `EFLY_MODE=dd` for `efly-dd`
-* `EFLY_MODE=pacstrap` for `efly-pacstrap`

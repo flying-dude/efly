@@ -81,7 +81,14 @@ fmt
 nlohmann-json
 ninja
 
-# packages from arch linux releng config
+########################################
+###
+### ARCHISO PACKAGES
+###
+### Packages From Arch Linux RelEng Config.
+###
+########################################
+
 alsa-utils
 arch-install-scripts
 archinstall
@@ -169,7 +176,6 @@ smartmontools
 sof-firmware
 squashfs-tools
 sudo
-syslinux
 systemd-resolvconf
 tcpdump
 terminus-font
@@ -187,3 +193,27 @@ wpa_supplicant
 wvdial
 xfsprogs
 xl2tpd
+
+########################################
+###
+### BOOT PACKAGES
+###
+### Packages Required for Creating a Bootable System.
+### (remove these in case you use efly profiles for container setups)
+###
+########################################
+
+linux
+linux-atm
+linux-firmware
+linux-firmware-marvell
+
+mkinitcpio
+mkinitcpio-archiso
+mkinitcpio-nfs-utils
+
+amd-ucode
+intel-ucode
+syslinux # BIOS booting
+broadcom-wl
+virtualbox-guest-utils-nox
