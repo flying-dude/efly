@@ -45,7 +45,6 @@ ripgrep
 unzip
 wget
 
-otter-browser
 okular
 
 # misc gui applications
