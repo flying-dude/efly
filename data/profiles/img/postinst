@@ -18,6 +18,10 @@ systemctl enable NetworkManager.service
 systemctl enable reflector.service
 systemctl enable bluetooth.service
 
+# update pacman mirror list and fetch package info
+reflector --latest 5 --sort rate --save /etc/pacman.d/mirrorlist
+pacman --sync --refresh --refresh --sysupgrade --sysupgrade --noconfirm
+
 # install ymerge package manager
 chown --recursive efly:efly /ymerge-PKGBUILD/
 cd /ymerge-PKGBUILD/
