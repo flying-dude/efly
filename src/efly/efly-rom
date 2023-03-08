@@ -302,14 +302,16 @@ mnt = out_dir / "mnt"
 efi = mnt / "loop1"; cleanup_mount(f"{loop}p1", efi)
 lower = mnt / "loop2"; cleanup_mount(f"{loop}p2", lower)
 
-upper = mnt / "loop3";
-sudo(["mkdir", upper]); atexit.register(sudo, ["rmdir", upper])
-sudo(["mount", "-t", "tmpfs", "-o", "size=1G", "tmpfs", upper])
-atexit.register(sudo, ["umount", upper])
-
 # copy helper /boot to real /boot
 cleanup_mount(grub_tmp, mnt / "boot")
 sudo(["cp", "--recursive", "--no-target-directory", mnt / "boot", efi])
+
+overlay = mnt / "loop3"
+sudo(["mkdir", overlay])
+atexit.register(sudo, ["rmdir", overlay])
+
+upper = overlay / "upper"
+work = overlay / "work"
 
 # create overlay "upper" and "work". they will be cleared at the end using atexit (likely they are empty anyway).
 sudo(["mkdir", upper]); atexit.register(sudo, ["mkdir", upper]); atexit.register(sudo, ["rm", "--recursive", upper])
