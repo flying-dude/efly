@@ -6,10 +6,6 @@ Usage: efly img [options]
 Create a bootable live system, that can be placed on a USB flash drive.
 It has persistent storage and will retain changes among reboots. Requires a UEFI system for booting.
 
-The persistent storage is facilitated using an overlayfs, that writes changes to an underlying
-ext4 partition. The base system is an immutable squashfs partition, which is used by the overlayfs
-for the read-only part.
-
 General Options:
   -h --help                  Show this screen.
   -v --version               Print version info.
@@ -23,10 +19,10 @@ General Options:
 
 Size Options:                Unit in M, G or T (KiB, MiB, GiB, TiB resp.) - Example: 128M
   --efi-size <size>          Set size of the EFI boot partition.
-  --overlay-size <size>      Set initial size of overlay partition. Will still auto-expand on first boot.
+  --rootfs-size <size>       Set initial size of the root partition "/". Will still auto-expand on first boot.
 
 Example:
-    efly img --overlay-size 10G
+    efly img --rootfs-size 10G
 """.lstrip().rstrip()
 
 import os, subprocess, atexit, sys, re, math
@@ -51,7 +47,7 @@ out_dir = Path("out")
 
 # parse cli
 cli_efi_size_M = None
-cli_overlay_size_M = None
+cli_rootfs_size_M = 128
 flag_shell = False
 args = sys.argv[1:]
 while args and args[0].startswith("-"):
@@ -79,17 +75,17 @@ while args and args[0].startswith("-"):
         args = args[2:]
         continue
 
-    if args[0] == "--overlay-size":
+    if args[0] == "--rootfs-size":
         if len(args) < 2:
-            error('missing argument for cli flag "--overlay-size"')
+            error('missing argument for cli flag "--rootfs-size"')
             exit(1)
 
         try:
-            cli_overlay_size_B = parse_size(args[1])
-            cli_overlay_size_M = math.ceil(cli_overlay_size_B / 1024 / 1024)
-            info(f'will use {cli_overlay_size_M}MiB for overlay partition')
+            cli_rootfs_size_B = parse_size(args[1])
+            cli_rootfs_size_M = math.ceil(cli_rootfs_size_B / 1024 / 1024)
+            info(f'will use {cli_rootfs_size_M}MiB for rootfs partition')
         except Exception as e:
-            error(f'invalid overlay size: "{args[1]}"')
+            error(f'invalid rootfs size: "{args[1]}"')
             exit(1)
 
         args = args[2:]
@@ -133,7 +129,6 @@ cmd2pkg = [
     ("mkfs.ext4", "e2fsprogs"),
     ("pacstrap", "arch-install-scripts"),
     ("sgdisk", "gptfdisk"),
-    ("mksquashfs", "squashfs-tools"),
     ("sudo", "sudo")]
 
 # check for presence of required shell commands
@@ -204,20 +199,11 @@ atexit.register(sudo, ["umount", "--lazy", "--quiet", chroot_boot], ignore_error
 # generate a random uuid for each partition
 import uuid
 boot_uuid = str(uuid.uuid4())
-squash_uuid = str(uuid.uuid4())
-overlay_uuid = str(uuid.uuid4())
+root_uuid = str(uuid.uuid4())
 
-# copy config files for overlayfs
-sudo(["cp", "--recursive", "--no-target-directory", data_dir / "overlayfs-config", chroot_fs])
-sudo(["sed", "--in-place", f"s/XXX__EFLY_OVERLAY_UUID__XXX/{overlay_uuid}/g", chroot_fs / "usr" / "lib" / "initcpio" / "hooks" / "overlayfs"])
-sudo(["sed", "--in-place", f"s/XXX__EFLY_OVERLAY_UUID__XXX/{overlay_uuid}/g", chroot_fs / "etc" / "systemd" / "system" / "boot-growfs"])
-
-# copy mkinitcpio.conf
-sudo(["cp", data_dir / "mkinitcpio-img.conf", chroot_fs / "etc" / "mkinitcpio.conf"])
-
-# copy fstab
-sudo(["cp", data_dir / "fstab-img", chroot_fs / "etc" / "fstab"])
-sudo(["sed", "--in-place", f"s/XXX__EFLY_EFI_UUID__XXX/{boot_uuid}/g", chroot_fs / "etc" / "fstab"])
+# copy extra files for efly-img
+sudo(["cp", "--recursive", "--no-target-directory", data_dir / "extra" / "img", chroot_fs])
+sudo(["sed", "--in-place", f"s/XXX__EFLY_ROOT_UUID__XXX/{root_uuid}/g", chroot_fs / "etc" / "systemd" / "system" / "boot-growfs"])
 
 # copy user-defined filesystem data
 extra_files = profile_dir / "extra"
@@ -258,8 +244,7 @@ if postinst_script.is_file():
     # exec postinst inside chroot
     chroot(chroot_fs, ["/postinst"],
         EFLY_BOOT_UUID=boot_uuid,
-        EFLY_SQUASH_UUID=squash_uuid,
-        EFLY_OVERLAY_UUID=overlay_uuid,
+        EFLY_ROOT_UUID=root_uuid,
         EFLY_MODE="img")
 
     # cleanup postinst file after running it
@@ -293,38 +278,13 @@ info(f"/boot size: {boot_size_M}M")
 # going to create squashfs now. need to exclude data of boot partition from that.
 sudo(["umount", "--lazy", chroot_boot])
 
-# create squashfs
-efly_live_sfs = out_dir / "efly-live.sfs"
-if efly_live_sfs.is_file():
-    info(f"skipping mksquashfs. squashfs file already exists: {efly_live_sfs}")
-else:
-    # create a highly compressed squashfs archive
-    # https://techoverflow.net/2013/01/11/creating-a-highly-compressed-squashfs-from-a-folder/
-    sudo(["mksquashfs", chroot_fs, efly_live_sfs, "-b", "1048576", "-comp", "xz", "-Xdict-size", "100%"])
-
-    # for testing: faster compression with lz4
-    # https://unix.stackexchange.com/questions/256898/squashfs-minimal-compression
-    #sudo(["mksquashfs", chroot_fs, efly_live_sfs, "-comp", "lz4"])
-
-# calculate size of squashfs partition
-sfs_size_B = efly_live_sfs.stat().st_size
-sfs_size_M = sfs_size_B / 1024 / 1024
-sfs_size_M = math.ceil(sfs_size_M)
-info(f"sfs size: {sfs_size_M}M")
-
-# initial size for ext4  on the image. will expand to full size of USB stick on first boot.
-if cli_overlay_size_M:
-    ext4_size_M = cli_overlay_size_M
-else:
-	ext4_size_M = 128 # default size for overlay partition is 128MiB, if not specified otherwise
-
 # GUID partition table takes 1MiB
 gpt_size_M = 1
 
 # we are now ready to create the final image
 efly_live_img = out_dir / "efly-live.img"
 # need +1 extra M for some reason here; otherwise the 3rd partition won't fit
-r(["truncate", f"--size={gpt_size_M + boot_size_M + sfs_size_M + ext4_size_M + 1}M", efly_live_img])
+r(["truncate", f"--size={gpt_size_M + boot_size_M + cli_rootfs_size_M + 1}M", efly_live_img])
 
 # create partitions using sgdisk
 r(["sgdisk",
@@ -335,16 +295,12 @@ r(["sgdisk",
     efly_live_img])
 print()
 
-r(["sgdisk", "--new", f"2:0:+{sfs_size_M}M", "--change-name", "2:efly-squash", "--partition-guid", f"2:{squash_uuid}", efly_live_img])
-print()
-
-r(["sgdisk", "--new", f"3:0:+{ext4_size_M}M", "--change-name", "3:efly-overlay", "--partition-guid", f"3:{overlay_uuid}", efly_live_img])
+r(["sgdisk", "--new", f"2:0:+{cli_rootfs_size_M}M", "--change-name", "2:efly-ext4", "--partition-guid", f"2:{root_uuid}", efly_live_img])
 print()
 
 r(["sgdisk", "--print", efly_live_img]); print()
 info(f"boot uuid: {boot_uuid}")
-info(f"squash uuid: {squash_uuid}")
-info(f"overlay uuid: {overlay_uuid}")
+info(f"root uuid: {root_uuid}")
 print()
 
 # set up loop device
@@ -369,21 +325,10 @@ def cleanup_mount(from_, to):
 mnt = out_dir / "mnt"
 cleanup_mount(f"{loop}p1", mnt / "loop1"); efi = mnt / "loop1"
 cleanup_mount(f"{loop}p2", mnt / "loop2"); lower = mnt / "loop2"
-cleanup_mount(f"{loop}p3", mnt / "loop3"); overlay = mnt / "loop3"; upper = overlay / "upper"; work = overlay / "work"
 
 # copy helper /boot to real /boot
 cleanup_mount(grub_tmp, mnt / "boot")
 sudo(["cp", "--recursive", "--no-target-directory", mnt / "boot", efi])
-
-# create overlay "upper" and "work". they will be cleared at the end using atexit (likely they are empty anyway).
-sudo(["mkdir", upper]); atexit.register(sudo, ["mkdir", upper]); atexit.register(sudo, ["rm", "--recursive", upper])
-sudo(["mkdir", work]); atexit.register(sudo, ["mkdir", work]); atexit.register(sudo, ["rm", "--recursive", work])
-
-# mount overlayfs
-root = mnt / "root"
-sudo(["mkdir", root]); atexit.register(sudo, ["rmdir", root])
-sudo(["mount", "-t", "overlay", "-o", f"lowerdir={lower},upperdir={upper},workdir={work}", "none", root])
-atexit.register(sudo, ["umount", root])
 
 # we installed grub before to get the right size for the boot partition.
 # but we actually need to install it relative to the obtained loop device, which we have only now.
@@ -408,7 +353,7 @@ chroot(root, [
 
 # copy grub config and assign variables inside the file
 sudo(["cp", script_dir / "data" / "grub.cfg", boot / "grub"])
-sudo(["sed", "--in-place", f"s/XXX__EFLY_ROOT_UUID__XXX/{squash_uuid}/g", boot / "grub" / "grub.cfg"])
-sudo(["sed", "--in-place", f"s/XXX__EFLY_ROOTFSTYPE__XXX/squashfs/g", boot / "grub" / "grub.cfg"])
+sudo(["sed", "--in-place", f"s/XXX__EFLY_ROOT_UUID__XXX/{root_uuid}/g", boot / "grub" / "grub.cfg"])
+sudo(["sed", "--in-place", f"s/XXX__EFLY_ROOTFSTYPE__XXX/ext4/g", boot / "grub" / "grub.cfg"])
 
 info("Running cleanup data before program exit.")

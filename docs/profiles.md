@@ -56,11 +56,10 @@ Since `efly-dd` has no squashfs partition, all data except EFI boot partition is
 
 A number of environment variables are passed to the `postinst` script, depening on the install mode:
 
-* `efly-img`:
+* `efly-rom`:
   * `EFLY_BOOT_UUID`: PARTUUID of the EFI boot partition.
   * `EFLY_SQUASH_UUID`: PARTUUID of the squashfs partition.
-  * `EFLY_OVERLAY_UUID`: PARTUUID of the `ext4` overlay partition.
-* `efly-dd`:
+* `efly-img` and `efly-dd`:
   * `EFLY_BOOT_UUID`: PARTUUID of the EFI boot partition.
   * `EFLY_ROOT_UUID`: PARTUUID of the `ext4` root partition.
 
@@ -68,3 +67,4 @@ Additionally, a variable `EFLY_MODE` helps the `postinst` script to distinguish 
 
 * `EFLY_MODE=img` for `efly-img`
 * `EFLY_MODE=dd` for `efly-dd`
+* `EFLY_MODE=rom` for `efly-rom`

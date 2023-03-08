@@ -301,7 +301,10 @@ def cleanup_mount(from_, to):
 mnt = out_dir / "mnt"
 cleanup_mount(f"{loop}p1", mnt / "loop1"); efi = mnt / "loop1"
 cleanup_mount(f"{loop}p2", mnt / "loop2"); lower = mnt / "loop2"
-cleanup_mount(f"{loop}p3", mnt / "loop3"); overlay = mnt / "loop3"; upper = overlay / "upper"; work = overlay / "work"
+
+sudo(["mkdir", mnt / "loop3"]); atexit.register(sudo, ["rmdir", mnt / "loop3"])
+sudo(["mount", "-t", "tmpfs", "-o", "size=1G", "tmpfs", mnt / "loop3"])
+atexit.register(sudo, ["umount", mnt / "loop3"])
 
 # copy helper /boot to real /boot
 cleanup_mount(grub_tmp, mnt / "boot")

@@ -4,7 +4,7 @@
 import os, subprocess, json
 from pathlib import Path
 
-uuid = "XXX__EFLY_OVERLAY_UUID__XXX" # this placeholder will be replaced with correct uuid during image creation.
+uuid = "XXX__EFLY_ROOT_UUID__XXX" # this placeholder will be replaced with correct uuid during image creation.
 partition = Path(f"/dev/disk/by-partuuid/{uuid}")
 
 if not partition.is_symlink():
