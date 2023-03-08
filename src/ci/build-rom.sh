@@ -8,7 +8,7 @@ echo groups: $(groups)
 echo working directory: $(pwd)
 
 echo
-ls -ahl
+ls -hla
 echo
 
 wget --no-verbose http://ftp.snt.utwente.nl/pub/os/linux/archlinux/iso/2023.03.01/archlinux-bootstrap-2023.03.01-x86_64.tar.gz
@@ -37,20 +37,21 @@ chroot image /bin/bash -c "sed -i 's/^#Server/Server/' /etc/pacman.d/mirrorlist"
 chroot image /bin/bash -c "sed -i 's/^CheckSpace/#CheckSpace/' /etc/pacman.conf"
 
 chroot image /bin/bash -c "pacman-key --init"
-chroot image /bin/bash -c "pacman-key --populate archlinux"
+chroot image /bin/bash -c "pacman-key --populate"
 
 # 3 august 2022: this one fixed keyring error in ci build:
 # https://www.reddit.com/r/EndeavourOS/comments/w5bla5/cant_update_invalid_or_corrupted_package/
 chroot image /bin/bash -c "pacman -Sy --noconfirm archlinux-keyring"
 
-# install the "archiso" package
+# install packages
 chroot image /bin/bash -c "pacman --sync --refresh --refresh --sysupgrade --sysupgrade --noconfirm"
-chroot image /bin/bash -c "pacman --sync --noconfirm archiso"
+chroot image /bin/bash -c "pacman --sync --noconfirm sudo dosfstools e2fsprogs squashfs-tools gptfdisk python"
 
-# create the iso file
-cp --recursive data/profiles/iso/ image/ # copy archiso config into chroot
-chroot image /bin/bash -c "mkarchiso -v /iso" # image/out/efly-live-2022.05.13-x86_64.iso
-mv image/out/*.iso efly-live.iso
+# copy efly source code into chroot and use it to create the img file
+cp --recursive --no-target-directory src/efly image/tmp-efly # copy efly python code
+rm image/tmp-efly/data; cp --recursive data image/tmp-efly # replace symlink to data with actual data for use inside chroot
+chroot image /bin/bash -c "/tmp-efly/efly-rom" # run efly-rom to create a read-only raw disk image
+mv image/out/efly-live.rom . # move the created image to a location where it can be found by github actions script
 
 # unmount previously mounted special directories
 #umount --lazy image/proc

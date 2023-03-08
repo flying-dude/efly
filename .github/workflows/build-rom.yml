@@ -1,4 +1,4 @@
-name: build-iso
+name: build-img
 
 on:
   push:
@@ -14,12 +14,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Build ISO File
+      - name: Build IMG File
         run: |
-          sudo bash src/ci/build-iso.sh
+          sudo bash src/ci/build-rom.sh
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: latest
           files: |
-            efly-live.iso
+            efly-live.rom
