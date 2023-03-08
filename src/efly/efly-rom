@@ -6,6 +6,10 @@ Usage: efly img [options]
 Create a bootable live system, that can be placed on a USB flash drive.
 It has persistent storage and will retain changes among reboots. Requires a UEFI system for booting.
 
+The persistent storage is facilitated using an overlayfs, that writes changes to an underlying
+ext4 partition. The base system is an immutable squashfs partition, which is used by the overlayfs
+for the read-only part.
+
 General Options:
   -h --help                  Show this screen.
   -v --version               Print version info.
@@ -20,6 +24,9 @@ General Options:
 Size Options:                Unit in M, G or T (KiB, MiB, GiB, TiB resp.) - Example: 128M
   --efi-size <size>          Set size of the EFI boot partition.
   --overlay-size <size>      Set initial size of overlay partition. Will still auto-expand on first boot.
+
+Example:
+    efly img --overlay-size 10G
 """.lstrip().rstrip()
 
 import os, subprocess, atexit, sys, re, math
@@ -44,7 +51,7 @@ out_dir = Path("out")
 
 # parse cli
 cli_efi_size_M = -1
-cli_overlay_size_M = -1
+cli_overlay_size_M = None
 flag_shell = False
 args = sys.argv[1:]
 while args and args[0].startswith("-"):
@@ -80,7 +87,7 @@ while args and args[0].startswith("-"):
         try:
             cli_overlay_size_B = parse_size(args[1])
             cli_overlay_size_M = math.ceil(cli_overlay_size_B / 1024 / 1024)
-            info(f'will use at least {cli_overlay_size_M}MiB for overlay partition')
+            info(f'will use {cli_overlay_size_M}MiB for overlay partition')
         except Exception as e:
             error(f'invalid overlay size: "{args[1]}"')
             exit(1)
@@ -274,7 +281,11 @@ if flag_shell:
 boot_size_B = du(chroot_fs / "boot")
 boot_size_M = boot_size_B / 1024 / 1024
 boot_size_M = math.ceil(boot_size_M)
-boot_size_M = boot_size_M + 2 # two extra MiB for boot partition. for file system metadata etc.
+
+# for safety, an extra 4MiB for the boot partition.
+# assuming the file system needs some extra space for metadata etc.
+boot_size_M = boot_size_M + 4
+
 boot_size_M = max(boot_size_M, cli_efi_size_M)
 info(f"/boot size: {boot_size_M}M")
 
@@ -301,7 +312,10 @@ sfs_size_M = math.ceil(sfs_size_M)
 info(f"sfs size: {sfs_size_M}M")
 
 # initial size for ext4  on the image. will expand to full size of USB stick on first boot.
-ext4_size_M = max(4, cli_overlay_size_M)
+if cli_overlay_size_M:
+    ext4_size_M = cli_overlay_size_M
+else:
+	ext4_size_M = 128 # default size for overlay partition is 128MiB, if not specified otherwise
 
 # GUID partition table takes 1MiB
 gpt_size_M = 1
