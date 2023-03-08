@@ -1,0 +1,399 @@
+#!/usr/bin/python
+
+usage = f"""
+Usage: efly img [options]
+
+Create a bootable live system, that can be placed on a USB flash drive.
+It has persistent storage and will retain changes among reboots. Requires a UEFI system for booting.
+
+General Options:
+  -h --help                  Show this screen.
+  -v --version               Print version info.
+
+  --out <out-dir>            Choose output directory instead of out/ inside current working directory.
+  --profile <profile-dir>    Use a custom profile instead of default profile.
+
+  --nocolor                  Deactivate colored output.
+  --shell                    Launch an interactive shell after running the postinst script.
+                             Useful for doing some manual tweaking or for debuggung.
+
+Size Options:                Unit in M, G or T (KiB, MiB, GiB, TiB resp.) - Example: 128M
+  --efi-size <size>          Set size of the EFI boot partition.
+  --overlay-size <size>      Set initial size of overlay partition. Will still auto-expand on first boot.
+""".lstrip().rstrip()
+
+import os, subprocess, atexit, sys, re, math
+from pathlib import Path
+
+# https://stackoverflow.com/questions/6598053/python-global-exception-handling
+import sys
+def my_except_hook(exctype, value, traceback):
+    if exctype == KeyboardInterrupt:
+        print("Program interrupted via keyboard.")
+    else:
+        sys.__excepthook__(exctype, value, traceback)
+sys.excepthook = my_except_hook
+
+import elib
+from elib import *
+
+script_dir = Path(os.path.dirname(os.path.realpath(__file__)))
+data_dir = script_dir / "data" # TODO this should be a global variable
+profile_dir = data_dir / "profiles" / "img" # TODO this should also be a global variable. and separate from data_dir.
+out_dir = Path("out")
+
+# parse cli
+cli_efi_size_M = -1
+cli_overlay_size_M = -1
+flag_shell = False
+args = sys.argv[1:]
+while args and args[0].startswith("-"):
+    if args[0] == "-h" or args[0] == "--help":
+        print(usage)
+        exit(0)
+
+    if args[0] == "-v" or args[0] == "--version":
+        print(version)
+        exit(0)
+
+    if args[0] == "--efi-size":
+        if len(args) < 2:
+            error('missing argument for cli flag "--efi-size"')
+            exit(1)
+
+        try:
+            cli_efi_size_B = parse_size(args[1])
+            cli_efi_size_M = math.ceil(cli_efi_size_B / 1024 / 1024)
+            info(f'will use at least {cli_efi_size_M}MiB for EFI boot partition')
+        except Exception as e:
+            error(f'invalid efi size: "{args[1]}"')
+            exit(1)
+
+        args = args[2:]
+        continue
+
+    if args[0] == "--overlay-size":
+        if len(args) < 2:
+            error('missing argument for cli flag "--overlay-size"')
+            exit(1)
+
+        try:
+            cli_overlay_size_B = parse_size(args[1])
+            cli_overlay_size_M = math.ceil(cli_overlay_size_B / 1024 / 1024)
+            info(f'will use at least {cli_overlay_size_M}MiB for overlay partition')
+        except Exception as e:
+            error(f'invalid overlay size: "{args[1]}"')
+            exit(1)
+
+        args = args[2:]
+        continue
+
+    if args[0] == "--profile":
+        if len(args) < 2:
+            error('missing argument for cli flag "--profile"')
+            exit(1)
+        else:
+            profile_dir = Path(args[1])
+            args = args[2:]
+            continue
+
+    if args[0] == "--out":
+        if len(args) < 2:
+            error('missing argument for cli flag "--out"')
+            exit(1)
+        else:
+            out_dir = Path(args[1])
+            args = args[2:]
+            continue
+
+    if args[0] == "--nocolor":
+        elib.colored_output = False
+        args = args[1:]
+        continue
+
+    if args[0] == "--shell":
+        flag_shell = True
+        args = args[1:]
+        continue
+
+    error(f'unknown cli flag: "{args[0]}"')
+    exit(1)
+
+# list of required shell commands together with their corresponding packages
+cmd2pkg = [
+    ("arch-chroot", "arch-install-scripts"),
+    ("mkfs.vfat", "dosfstools"),
+    ("mkfs.ext4", "e2fsprogs"),
+    ("pacstrap", "arch-install-scripts"),
+    ("sgdisk", "gptfdisk"),
+    ("mksquashfs", "squashfs-tools"),
+    ("sudo", "sudo")]
+
+# check for presence of required shell commands
+from shutil import which
+missing_pkg = False
+for cmd, pkg in cmd2pkg:
+    if which(cmd) is None:
+        error(f"missing shell command '{cmd}'. if running arch linux, install with: pacman --sync {pkg}")
+        missing_pkg = True
+
+# abort if we are missing some shell commands
+if missing_pkg:
+    error("exiting due to missing shell command.")
+    exit(1)
+
+# check if config dir is present
+if not profile_dir.is_dir():
+    error(f'profile folder not present: "{profile_dir}"')
+    exit(1)
+
+# check for presence of package list
+package_txt = profile_dir / "packages.txt"
+if not package_txt.is_file():
+    error(f'package file not found: "{packages_txt}"')
+    exit(1)
+
+# read and parse list of packages
+packages = []
+with open(package_txt) as lines:
+    for line in lines:
+        line = line.rstrip()
+        if len(line) == 0:
+            continue
+
+        line = line.split('#')[0]
+        if len(line) == 0:
+            continue
+
+        line = line.split(' ')
+        for pkg in line:
+            if len(pkg) == 0:
+                continue
+            packages.append(pkg)
+
+# create output directory
+out_dir.mkdir(exist_ok=True, parents=True)
+
+# set up data dir. we run pacstrap here. this should be owned by root to avoid pacman reporting warning.
+chroot_fs = out_dir / "chroot-fs"; sudo(["mkdir", chroot_fs])
+
+# grub-install will insist that the target location is a FAT partition.
+# but we need the full size of /boot folder before we can create the partition.
+# so we create a temporary image file first and put the grub stuff there
+grub_tmp = out_dir / "grub-tmp.img"
+r(["truncate", "--size=128M", grub_tmp])
+r(["mkfs.vfat", grub_tmp])
+atexit.register(r, ["rm", grub_tmp])
+
+# create boot directory
+chroot_boot = chroot_fs / "boot"
+sudo(["mkdir", chroot_boot])
+
+# mount grub image file. this needs to be unmounted before program exit.
+# but we do safety "--quiet" umount in case of premature program exit (aka "error").
+sudo(["mount", grub_tmp, chroot_boot])
+atexit.register(sudo, ["umount", "--lazy", "--quiet", chroot_boot], ignore_error=True)
+
+# generate a random uuid for each partition
+import uuid
+boot_uuid = str(uuid.uuid4())
+squash_uuid = str(uuid.uuid4())
+overlay_uuid = str(uuid.uuid4())
+
+# copy config files for overlayfs
+sudo(["cp", "--recursive", "--no-target-directory", data_dir / "overlayfs-config", chroot_fs])
+sudo(["sed", "--in-place", f"s/XXX__EFLY_OVERLAY_UUID__XXX/{overlay_uuid}/g", chroot_fs / "usr" / "lib" / "initcpio" / "hooks" / "overlayfs"])
+sudo(["sed", "--in-place", f"s/XXX__EFLY_OVERLAY_UUID__XXX/{overlay_uuid}/g", chroot_fs / "etc" / "systemd" / "system" / "boot-growfs"])
+
+# copy mkinitcpio.conf
+sudo(["cp", data_dir / "mkinitcpio-img.conf", chroot_fs / "etc" / "mkinitcpio.conf"])
+
+# copy fstab
+sudo(["cp", data_dir / "fstab-img", chroot_fs / "etc" / "fstab"])
+sudo(["sed", "--in-place", f"s/XXX__EFLY_EFI_UUID__XXX/{boot_uuid}/g", chroot_fs / "etc" / "fstab"])
+
+# copy user-defined filesystem data
+extra_files = profile_dir / "extra"
+if extra_files.is_dir():
+    sudo(["cp", "--recursive", "--no-target-directory", extra_files, chroot_fs])
+
+# run pacstrap
+pacstrap(chroot_fs, packages)
+
+# enable growfs service to expand ext4 partition at boot
+chroot(chroot_fs, ["systemctl", "enable", "boot-growfs.service"])
+
+# obtain "month-year" for bootloader id
+import datetime
+year = datetime.datetime.now().year
+month = datetime.datetime.now().month
+month_year = f"{'{:02}'.format(month)}-{year}"
+
+# install grub. this one is only to obtain the correct size for boot partition
+# we run grub-install "for real" a second time further below
+chroot(chroot_fs,
+    [
+        "grub-install",
+        "--target=x86_64-efi",
+        "--efi-directory=/boot",
+        f"--bootloader-id=\"Efly Live {month_year} [GRUB]\"",
+        "--recheck",
+        "--removable"
+    ])
+
+# execute image customization script, if it exists
+postinst_script = profile_dir / "postinst"
+if postinst_script.is_file():
+    # copy files
+    sudo(["cp", postinst_script, chroot_fs])
+    sudo(["chmod", "+x", chroot_fs / "postinst"])
+
+    # exec postinst inside chroot
+    chroot(chroot_fs, ["/postinst"],
+        EFLY_BOOT_UUID=boot_uuid,
+        EFLY_SQUASH_UUID=squash_uuid,
+        EFLY_OVERLAY_UUID=overlay_uuid,
+        EFLY_MODE="img")
+
+    # cleanup postinst file after running it
+    sudo(["rm", chroot_fs / "postinst"])
+
+# hop into a shell, if requested by the user.
+if flag_shell:
+    if (chroot_fs / "bin" / "fish").is_file():
+        chroot(chroot_fs, ["/bin/fish", "--private"]) # launch fish but do not store any history
+    elif (chroot_fs / "bin" / "bash").is_file():
+        chroot(chroot_fs, ["/bin/bash"])
+    elif (chroot_fs / "bin" / "sh").is_file():
+        chroot(chroot_fs, ["/bin/sh"])
+    else:
+        error('cli flag "--shell" was specified but could not find a shell at /bin/fish, /bin/bash or /bin/sh')
+        exit(1)
+
+# calculate size of boot partition
+boot_size_B = du(chroot_fs / "boot")
+boot_size_M = boot_size_B / 1024 / 1024
+boot_size_M = math.ceil(boot_size_M)
+boot_size_M = boot_size_M + 2 # two extra MiB for boot partition. for file system metadata etc.
+boot_size_M = max(boot_size_M, cli_efi_size_M)
+info(f"/boot size: {boot_size_M}M")
+
+# going to create squashfs now. need to exclude data of boot partition from that.
+sudo(["umount", "--lazy", chroot_boot])
+
+# create squashfs
+efly_live_sfs = out_dir / "efly-live.sfs"
+if efly_live_sfs.is_file():
+    info(f"skipping mksquashfs. squashfs file already exists: {efly_live_sfs}")
+else:
+    # create a highly compressed squashfs archive
+    # https://techoverflow.net/2013/01/11/creating-a-highly-compressed-squashfs-from-a-folder/
+    sudo(["mksquashfs", chroot_fs, efly_live_sfs, "-b", "1048576", "-comp", "xz", "-Xdict-size", "100%"])
+
+    # for testing: faster compression with lz4
+    # https://unix.stackexchange.com/questions/256898/squashfs-minimal-compression
+    #sudo(["mksquashfs", chroot_fs, efly_live_sfs, "-comp", "lz4"])
+
+# calculate size of squashfs partition
+sfs_size_B = efly_live_sfs.stat().st_size
+sfs_size_M = sfs_size_B / 1024 / 1024
+sfs_size_M = math.ceil(sfs_size_M)
+info(f"sfs size: {sfs_size_M}M")
+
+# initial size for ext4  on the image. will expand to full size of USB stick on first boot.
+ext4_size_M = max(4, cli_overlay_size_M)
+
+# GUID partition table takes 1MiB
+gpt_size_M = 1
+
+# we are now ready to create the final image
+efly_live_img = out_dir / "efly-live.img"
+# need +1 extra M for some reason here; otherwise the 3rd partition won't fit
+r(["truncate", f"--size={gpt_size_M + boot_size_M + sfs_size_M + ext4_size_M + 1}M", efly_live_img])
+
+# create partitions using sgdisk
+r(["sgdisk",
+    "--new", f"1:0:+{boot_size_M}M",
+    "--typecode", "1:EF00",
+    "--change-name", "1:efly-efi",
+    "--partition-guid", f"1:{boot_uuid}",
+    efly_live_img])
+print()
+
+r(["sgdisk", "--new", f"2:0:+{sfs_size_M}M", "--change-name", "2:efly-squash", "--partition-guid", f"2:{squash_uuid}", efly_live_img])
+print()
+
+r(["sgdisk", "--new", f"3:0:+{ext4_size_M}M", "--change-name", "3:efly-overlay", "--partition-guid", f"3:{overlay_uuid}", efly_live_img])
+print()
+
+r(["sgdisk", "--print", efly_live_img]); print()
+info(f"boot uuid: {boot_uuid}")
+info(f"squash uuid: {squash_uuid}")
+info(f"overlay uuid: {overlay_uuid}")
+print()
+
+# set up loop device
+loop = get(["sudo", "losetup", "--show", "--find", "--partscan", efly_live_img])
+info(f"loop: {loop}")
+atexit.register(sudo, ["losetup", "--detach", loop])
+
+# initialize partitions
+sudo(["mkfs.vfat", f"{loop}p1"])
+sudo(["cp", efly_live_sfs, f"{loop}p2"])
+sudo(["mkfs.ext4", f"{loop}p3"])
+
+# helper dir for mounting image partitions
+sudo(["mkdir", out_dir / "mnt"]); atexit.register(sudo, ["rmdir", out_dir / "mnt"])
+
+# create mount point, do the mount and cleanup at the end.
+def cleanup_mount(from_, to):
+    sudo(["mkdir", to]); atexit.register(sudo, ["rmdir", to])
+    sudo(["mount", from_, to]); atexit.register(sudo, ["umount", to])
+
+# mount image partitions
+mnt = out_dir / "mnt"
+cleanup_mount(f"{loop}p1", mnt / "loop1"); efi = mnt / "loop1"
+cleanup_mount(f"{loop}p2", mnt / "loop2"); lower = mnt / "loop2"
+cleanup_mount(f"{loop}p3", mnt / "loop3"); overlay = mnt / "loop3"; upper = overlay / "upper"; work = overlay / "work"
+
+# copy helper /boot to real /boot
+cleanup_mount(grub_tmp, mnt / "boot")
+sudo(["cp", "--recursive", "--no-target-directory", mnt / "boot", efi])
+
+# create overlay "upper" and "work". they will be cleared at the end using atexit (likely they are empty anyway).
+sudo(["mkdir", upper]); atexit.register(sudo, ["mkdir", upper]); atexit.register(sudo, ["rm", "--recursive", upper])
+sudo(["mkdir", work]); atexit.register(sudo, ["mkdir", work]); atexit.register(sudo, ["rm", "--recursive", work])
+
+# mount overlayfs
+root = mnt / "root"
+sudo(["mkdir", root]); atexit.register(sudo, ["rmdir", root])
+sudo(["mount", "-t", "overlay", "-o", f"lowerdir={lower},upperdir={upper},workdir={work}", "none", root])
+atexit.register(sudo, ["umount", root])
+
+# we installed grub before to get the right size for the boot partition.
+# but we actually need to install it relative to the obtained loop device, which we have only now.
+# so we install it a second time here.
+
+# mount boot partition once more
+boot = root / "boot"
+sudo(["mount", "--bind", efi, boot]); atexit.register(sudo, ["umount", boot])
+
+# need to wipe grub dir to prevent out-of-diskspace error when running grub again in the next step.
+# (grub partition size is minimal to keep image size minimal. so there is not much extra space left.)
+sudo(["rm", "--recursive", boot / "grub"])
+
+# rerun grub-install. this time on the real configuration.
+chroot(root, [
+        "grub-install",
+        "--target=x86_64-efi",
+        "--efi-directory=/boot",
+        f'--bootloader-id="Efly Live {month_year} [GRUB]"',
+        "--recheck",
+        "--removable", loop])
+
+# copy grub config and assign variables inside the file
+sudo(["cp", script_dir / "data" / "grub.cfg", boot / "grub"])
+sudo(["sed", "--in-place", f"s/XXX__EFLY_ROOT_UUID__XXX/{squash_uuid}/g", boot / "grub" / "grub.cfg"])
+sudo(["sed", "--in-place", f"s/XXX__EFLY_ROOTFSTYPE__XXX/squashfs/g", boot / "grub" / "grub.cfg"])
+
+info("Running cleanup data before program exit.")
