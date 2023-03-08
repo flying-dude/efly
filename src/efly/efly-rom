@@ -299,12 +299,13 @@ def cleanup_mount(from_, to):
 
 # mount image partitions
 mnt = out_dir / "mnt"
-cleanup_mount(f"{loop}p1", mnt / "loop1"); efi = mnt / "loop1"
-cleanup_mount(f"{loop}p2", mnt / "loop2"); lower = mnt / "loop2"
+efi = mnt / "loop1"; cleanup_mount(f"{loop}p1", efi)
+lower = mnt / "loop2"; cleanup_mount(f"{loop}p2", lower)
 
-sudo(["mkdir", mnt / "loop3"]); atexit.register(sudo, ["rmdir", mnt / "loop3"])
-sudo(["mount", "-t", "tmpfs", "-o", "size=1G", "tmpfs", mnt / "loop3"])
-atexit.register(sudo, ["umount", mnt / "loop3"])
+upper = mnt / "loop3";
+sudo(["mkdir", upper]); atexit.register(sudo, ["rmdir", upper])
+sudo(["mount", "-t", "tmpfs", "-o", "size=1G", "tmpfs", upper])
+atexit.register(sudo, ["umount", upper])
 
 # copy helper /boot to real /boot
 cleanup_mount(grub_tmp, mnt / "boot")
