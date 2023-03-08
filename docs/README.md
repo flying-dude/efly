@@ -2,27 +2,48 @@
 
 ## Creating Bootable Disk Images
 
-The efly live system ships with its own command-line tool for creating bootable disk images.
-These images have persistent storage and will auto-expand the file system to full storage capacity on first boot, if you place them on a USB stick (on slow sticks this can take a few minutes).
+The `efly` live system ships with its own command-line tool for creating bootable disk images.
 
 ```
-$ efly img --help
-Usage: efly img [options]
+Usage: efly [subcommand] [options]
+       efly <subcommand> --help
 
-Create raw disk images for live systems bootable from a USB flash drive.
-The live system has persistent storage and will retain changes among reboots.
+Version: 0.0.7
+
+Create and manage bootable disk images based on Arch Linux.
+
+Subcommands:
+  efly dd        :: Install an efly system directly on a given block device.
+  efly img       :: Create a read-write disk image with expanding root partition.
+  efly rom       :: Create a read-only disk image.
+
+  efly qemu      :: Boot a disk image using qemu.
+  efly vncserver :: Launch a VNC server using TigerVNC.
+```
+
+```
+$ efly rom --help
+Usage: efly rom [options]
+
+Create a read-only, bootable raw disk image. File system changes are written to a temporary file system
+in RAM, when booting the system. Data will reset to a clean state, when rebooting (changes made are then lost).
+
+Currently requires a UEFI system for booting. Hybrid boot including BIOS is planned.
 
 General Options:
   -h --help                  Show this screen.
+  -v --version               Print version info.
+
   --out <out-dir>            Choose output directory instead of out/ inside current working directory.
   --profile <profile-dir>    Use a custom profile instead of default profile.
 
+  --nocolor                  Deactivate colored output.
   --shell                    Launch an interactive shell after running the postinst script.
                              Useful for doing some manual tweaking or for debuggung.
 
-Size Options:                Unit in M, G or T (KiB, MiB, GiB, TiB resp.) - Example: 128M
-  --efi-size <size>          Set size of the EFI boot partition.
-  --overlay-size <size>      Set initial size of overlay partition. Will still auto-expand on first boot.
+Example:
+    efly rom # create a bootable disk image in folder ./out
+    efly qemu --uefi out/efly-live.rom # boot in UEFI mode using qemu
 ```
 
 ## Install `efly` Command Using PKGBUILD
@@ -46,32 +67,6 @@ cd efly/src/efly
 ./efly --help
 ```
 
-## Create a Bootable Raw Disk Image
-
-Use `efly img` to create a bootable raw disk image with persistent storage (read paragraph below on how to increase storage capacity):
-
-```
-efly img
-ls out/efly-live.img # location of the image
-```
-
-This produces a raw disk image, which has a graphical Arch Linux system installed on it.
-You can [put](flash.md) it on a USB stick and boot from it.
-
-### Increase Storage Capacity
-
-The root partition `/` is an overlayfs with a read-only squashfs partition containing all the data of
-the root partition and a read-write ext4 partition for making changes to the root partition.
-
-The ext4 partition has initially a tiny size of 4MB but is programmed to grow to maximum available size at first
-boot. This will probably be multiple GB depending on the size of your stick. If you want to boot the image
-inside a virtual machine like qemu, you should first increase available size using the `truncate` command:
-
-```
-truncate --size=10G efly-live.img
-efly qemu --uefi efly-live.img
-```
-
 ## Set up an Efly System on a Block Devick
 
 You can use `efly dd` to install a preconfigured Arch Linux system directly on a given block device (keep in mind that this will wipe all data on that block device):
@@ -91,7 +86,9 @@ Installations created using `efly dd` have only two partitions: One EFI boot par
 
 ## Packaging
 
-The created images use the Arch Linux operating system. You can install binary packages using the [`pacman`](https://wiki.archlinux.org/title/Pacman) tool. In addition to packages provided by mainline Arch Linux repositories, the [`ymerge`](https://github.com/flying-dude/ymerge) package manager provides extra packages available for install. These extra packages are compiled from source using [PKGBUILD](https://wiki.archlinux.org/title/PKGBUILD) package recipes.
+The created images are based on the Arch Linux operating system. You can install binary packages using [`pacman`](https://wiki.archlinux.org/title/Pacman).
+In addition to packages provided by mainline Arch Linux repositories, the [`ymerge`](https://github.com/flying-dude/ymerge) package manager provides extra packages available for install.
+These extra packages are compiled from source using [PKGBUILD](https://wiki.archlinux.org/title/PKGBUILD) package recipes.
 
 ## UUIDs and Multiple Efly Devices
 

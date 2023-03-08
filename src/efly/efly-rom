@@ -1,14 +1,12 @@
 #!/usr/bin/python
 
 usage = f"""
-Usage: efly img [options]
+Usage: efly rom [options]
 
-Create a bootable live system, that can be placed on a USB flash drive.
-It has persistent storage and will retain changes among reboots. Requires a UEFI system for booting.
+Create a read-only, bootable raw disk image. File system changes are written to a temporary file system
+in RAM, when booting the system. Data will reset to a clean state, when rebooting (changes made are then lost).
 
-The persistent storage is facilitated using an overlayfs, that writes changes to an underlying
-ext4 partition. The base system is an immutable squashfs partition, which is used by the overlayfs
-for the read-only part.
+Currently requires a UEFI system for booting. Hybrid boot including BIOS is planned.
 
 General Options:
   -h --help                  Show this screen.
@@ -23,7 +21,7 @@ General Options:
 
 Example:
     efly rom # create a bootable disk image in folder ./out
-    efly qemu --uefi out/efly-live.rom # boot using qemu
+    efly qemu --uefi out/efly-live.rom # boot in UEFI mode using qemu
 """.lstrip().rstrip()
 
 import os, subprocess, atexit, sys, re, math
