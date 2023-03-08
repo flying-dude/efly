@@ -1,0 +1,4 @@
+#!/usr/bin/fish
+
+# find file
+find . | grep $argv

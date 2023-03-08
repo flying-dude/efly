@@ -1,0 +1,6 @@
+#!/usr/bin/fish
+
+# fish shell helper program to start programs in background without having to disown them
+# https://stackoverflow.com/questions/24093649/how-to-access-remaining-arguments-in-a-fish-script
+
+$argv[1] $argv[2..-1] &
