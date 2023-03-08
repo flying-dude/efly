@@ -50,7 +50,7 @@ profile_dir = data_dir / "profiles" / "img" # TODO this should also be a global 
 out_dir = Path("out")
 
 # parse cli
-cli_efi_size_M = -1
+cli_efi_size_M = None
 cli_overlay_size_M = None
 flag_shell = False
 args = sys.argv[1:]
@@ -286,7 +286,8 @@ boot_size_M = math.ceil(boot_size_M)
 # assuming the file system needs some extra space for metadata etc.
 boot_size_M = boot_size_M + 4
 
-boot_size_M = max(boot_size_M, cli_efi_size_M)
+if cli_efi_size_M:
+    boot_size_M = max(boot_size_M, cli_efi_size_M)
 info(f"/boot size: {boot_size_M}M")
 
 # going to create squashfs now. need to exclude data of boot partition from that.

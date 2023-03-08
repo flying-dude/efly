@@ -16,10 +16,10 @@ run_latehook() {
 	mkdir -p ${OFS_COWSPACE}
 
 	# uncomment this if you want non-persistent memory with filesystem in RAM.
-	# mount -t tmpfs cowspace ${OFS_COWSPACE}
+	mount -t tmpfs cowspace ${OFS_COWSPACE}
 
 	# uncomment this if you want persistent storage
-	mount PARTUUID="XXX__EFLY_OVERLAY_UUID__XXX" ${OFS_COWSPACE}
+	# mount PARTUUID="XXX__EFLY_OVERLAY_UUID__XXX" ${OFS_COWSPACE}
 
 	[ -d ${OFS_UPPER} ] || mkdir -p ${OFS_UPPER}
 	[ -d ${OFS_WORK} ] || mkdir -p ${OFS_WORK}

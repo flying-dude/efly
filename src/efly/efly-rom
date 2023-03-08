@@ -21,12 +21,9 @@ General Options:
   --shell                    Launch an interactive shell after running the postinst script.
                              Useful for doing some manual tweaking or for debuggung.
 
-Size Options:                Unit in M, G or T (KiB, MiB, GiB, TiB resp.) - Example: 128M
-  --efi-size <size>          Set size of the EFI boot partition.
-  --overlay-size <size>      Set initial size of overlay partition. Will still auto-expand on first boot.
-
 Example:
-    efly img --overlay-size 10G
+    efly rom # create a bootable disk image in folder ./out
+    efly qemu --uefi out/efly-live.rom # boot using qemu
 """.lstrip().rstrip()
 
 import os, subprocess, atexit, sys, re, math
@@ -50,8 +47,6 @@ profile_dir = data_dir / "profiles" / "img" # TODO this should also be a global 
 out_dir = Path("out")
 
 # parse cli
-cli_efi_size_M = -1
-cli_overlay_size_M = None
 flag_shell = False
 args = sys.argv[1:]
 while args and args[0].startswith("-"):
@@ -62,38 +57,6 @@ while args and args[0].startswith("-"):
     if args[0] == "-v" or args[0] == "--version":
         print(version)
         exit(0)
-
-    if args[0] == "--efi-size":
-        if len(args) < 2:
-            error('missing argument for cli flag "--efi-size"')
-            exit(1)
-
-        try:
-            cli_efi_size_B = parse_size(args[1])
-            cli_efi_size_M = math.ceil(cli_efi_size_B / 1024 / 1024)
-            info(f'will use at least {cli_efi_size_M}MiB for EFI boot partition')
-        except Exception as e:
-            error(f'invalid efi size: "{args[1]}"')
-            exit(1)
-
-        args = args[2:]
-        continue
-
-    if args[0] == "--overlay-size":
-        if len(args) < 2:
-            error('missing argument for cli flag "--overlay-size"')
-            exit(1)
-
-        try:
-            cli_overlay_size_B = parse_size(args[1])
-            cli_overlay_size_M = math.ceil(cli_overlay_size_B / 1024 / 1024)
-            info(f'will use {cli_overlay_size_M}MiB for overlay partition')
-        except Exception as e:
-            error(f'invalid overlay size: "{args[1]}"')
-            exit(1)
-
-        args = args[2:]
-        continue
 
     if args[0] == "--profile":
         if len(args) < 2:
@@ -130,7 +93,6 @@ while args and args[0].startswith("-"):
 cmd2pkg = [
     ("arch-chroot", "arch-install-scripts"),
     ("mkfs.vfat", "dosfstools"),
-    ("mkfs.ext4", "e2fsprogs"),
     ("pacstrap", "arch-install-scripts"),
     ("sgdisk", "gptfdisk"),
     ("mksquashfs", "squashfs-tools"),
@@ -205,30 +167,17 @@ atexit.register(sudo, ["umount", "--lazy", "--quiet", chroot_boot], ignore_error
 import uuid
 boot_uuid = str(uuid.uuid4())
 squash_uuid = str(uuid.uuid4())
-overlay_uuid = str(uuid.uuid4())
 
-# copy config files for overlayfs
-sudo(["cp", "--recursive", "--no-target-directory", data_dir / "overlayfs-config", chroot_fs])
-sudo(["sed", "--in-place", f"s/XXX__EFLY_OVERLAY_UUID__XXX/{overlay_uuid}/g", chroot_fs / "usr" / "lib" / "initcpio" / "hooks" / "overlayfs"])
-sudo(["sed", "--in-place", f"s/XXX__EFLY_OVERLAY_UUID__XXX/{overlay_uuid}/g", chroot_fs / "etc" / "systemd" / "system" / "boot-growfs"])
+# copy extra files for efly-rom
+sudo(["cp", "--recursive", "--no-target-directory", data_dir / "extra" / "rom", chroot_fs])
 
-# copy mkinitcpio.conf
-sudo(["cp", data_dir / "mkinitcpio-img.conf", chroot_fs / "etc" / "mkinitcpio.conf"])
-
-# copy fstab
-sudo(["cp", data_dir / "fstab-img", chroot_fs / "etc" / "fstab"])
-sudo(["sed", "--in-place", f"s/XXX__EFLY_EFI_UUID__XXX/{boot_uuid}/g", chroot_fs / "etc" / "fstab"])
-
-# copy user-defined filesystem data
+# copy user-defined extra files
 extra_files = profile_dir / "extra"
 if extra_files.is_dir():
     sudo(["cp", "--recursive", "--no-target-directory", extra_files, chroot_fs])
 
 # run pacstrap
 pacstrap(chroot_fs, packages)
-
-# enable growfs service to expand ext4 partition at boot
-chroot(chroot_fs, ["systemctl", "enable", "boot-growfs.service"])
 
 # obtain "month-year" for bootloader id
 import datetime
@@ -259,8 +208,7 @@ if postinst_script.is_file():
     chroot(chroot_fs, ["/postinst"],
         EFLY_BOOT_UUID=boot_uuid,
         EFLY_SQUASH_UUID=squash_uuid,
-        EFLY_OVERLAY_UUID=overlay_uuid,
-        EFLY_MODE="img")
+        EFLY_MODE="rom")
 
     # cleanup postinst file after running it
     sudo(["rm", chroot_fs / "postinst"])
@@ -285,8 +233,6 @@ boot_size_M = math.ceil(boot_size_M)
 # for safety, an extra 4MiB for the boot partition.
 # assuming the file system needs some extra space for metadata etc.
 boot_size_M = boot_size_M + 4
-
-boot_size_M = max(boot_size_M, cli_efi_size_M)
 info(f"/boot size: {boot_size_M}M")
 
 # going to create squashfs now. need to exclude data of boot partition from that.
@@ -311,19 +257,13 @@ sfs_size_M = sfs_size_B / 1024 / 1024
 sfs_size_M = math.ceil(sfs_size_M)
 info(f"sfs size: {sfs_size_M}M")
 
-# initial size for ext4  on the image. will expand to full size of USB stick on first boot.
-if cli_overlay_size_M:
-    ext4_size_M = cli_overlay_size_M
-else:
-	ext4_size_M = 128 # default size for overlay partition is 128MiB, if not specified otherwise
-
 # GUID partition table takes 1MiB
 gpt_size_M = 1
 
 # we are now ready to create the final image
-efly_live_img = out_dir / "efly-live.img"
+efly_live_rom = out_dir / "efly-live.rom"
 # need +1 extra M for some reason here; otherwise the 3rd partition won't fit
-r(["truncate", f"--size={gpt_size_M + boot_size_M + sfs_size_M + ext4_size_M + 1}M", efly_live_img])
+r(["truncate", f"--size={gpt_size_M + boot_size_M + sfs_size_M + 1}M", efly_live_rom])
 
 # create partitions using sgdisk
 r(["sgdisk",
@@ -331,30 +271,25 @@ r(["sgdisk",
     "--typecode", "1:EF00",
     "--change-name", "1:efly-efi",
     "--partition-guid", f"1:{boot_uuid}",
-    efly_live_img])
+    efly_live_rom])
 print()
 
-r(["sgdisk", "--new", f"2:0:+{sfs_size_M}M", "--change-name", "2:efly-squash", "--partition-guid", f"2:{squash_uuid}", efly_live_img])
+r(["sgdisk", "--new", f"2:0:+{sfs_size_M}M", "--change-name", "2:efly-squash", "--partition-guid", f"2:{squash_uuid}", efly_live_rom])
 print()
 
-r(["sgdisk", "--new", f"3:0:+{ext4_size_M}M", "--change-name", "3:efly-overlay", "--partition-guid", f"3:{overlay_uuid}", efly_live_img])
-print()
-
-r(["sgdisk", "--print", efly_live_img]); print()
+r(["sgdisk", "--print", efly_live_rom]); print()
 info(f"boot uuid: {boot_uuid}")
 info(f"squash uuid: {squash_uuid}")
-info(f"overlay uuid: {overlay_uuid}")
 print()
 
 # set up loop device
-loop = get(["sudo", "losetup", "--show", "--find", "--partscan", efly_live_img])
+loop = get(["sudo", "losetup", "--show", "--find", "--partscan", efly_live_rom])
 info(f"loop: {loop}")
 atexit.register(sudo, ["losetup", "--detach", loop])
 
 # initialize partitions
 sudo(["mkfs.vfat", f"{loop}p1"])
 sudo(["cp", efly_live_sfs, f"{loop}p2"])
-sudo(["mkfs.ext4", f"{loop}p3"])
 
 # helper dir for mounting image partitions
 sudo(["mkdir", out_dir / "mnt"]); atexit.register(sudo, ["rmdir", out_dir / "mnt"])
