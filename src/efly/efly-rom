@@ -141,7 +141,7 @@ with open(package_txt) as lines:
 # create output directory
 out_dir.mkdir(exist_ok=True, parents=True)
 
-# set up data dir. we run pacstrap here. this should be owned by root to avoid pacman reporting warning.
+# have all "extra" data before pacstrap owned by root.
 chroot_fs = out_dir / "chroot-fs"; sudo(["mkdir", chroot_fs])
 
 # grub-install will insist that the target location is a FAT partition.
@@ -291,7 +291,8 @@ sudo(["mkfs.vfat", f"{loop}p1"])
 sudo(["cp", efly_live_sfs, f"{loop}p2"])
 
 # helper dir for mounting image partitions
-sudo(["mkdir", out_dir / "mnt"]); atexit.register(sudo, ["rmdir", out_dir / "mnt"])
+mnt = out_dir / "mnt"
+sudo(["mkdir", mnt]); atexit.register(sudo, ["rmdir", mnt])
 
 # create mount point, do the mount and cleanup at the end.
 def cleanup_mount(from_, to):
@@ -299,7 +300,6 @@ def cleanup_mount(from_, to):
     sudo(["mount", from_, to]); atexit.register(sudo, ["umount", to])
 
 # mount image partitions
-mnt = out_dir / "mnt"
 efi = mnt / "loop1"; cleanup_mount(f"{loop}p1", efi)
 lower = mnt / "loop2"; cleanup_mount(f"{loop}p2", lower)
 

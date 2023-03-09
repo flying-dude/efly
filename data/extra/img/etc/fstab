@@ -1,9 +1,0 @@
-# mount EFI boot partition to /boot
-PARTUUID=XXX__EFLY_EFI_UUID__XXX /boot vfat defaults 0 1
-
-# write tmp and log stuff to RAM (tmpfs)
-# Added 4 lines to use RAM instead of SSD for temp and log files
-tmpfs /tmp tmpfs defaults,noatime,mode=1777 0 0
-tmpfs /var/tmp tmpfs defaults,noatime,mode=1777 0 0
-tmpfs /var/log tmpfs defaults,noatime,mode=0755 0 0
-tmpfs /var/spool tmpfs defaults,noatime,mode=1777 0 0

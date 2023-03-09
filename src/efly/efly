@@ -12,7 +12,6 @@ Create and manage bootable disk images based on Arch Linux.
 
 Subcommands:
   efly dd        :: Create an efly system directly on a given block device.
-  efly img       :: Create a read-write disk image with expanding root partition.
   efly rom       :: Create a read-only disk image.
 
   efly qemu      :: Boot a disk image using qemu.
