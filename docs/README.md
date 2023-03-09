@@ -13,8 +13,7 @@ Version: 0.0.7
 Create and manage bootable disk images based on Arch Linux.
 
 Subcommands:
-  efly dd        :: Install an efly system directly on a given block device.
-  efly img       :: Create a read-write disk image with expanding root partition.
+  efly dd        :: Create an efly system directly on a given block device.
   efly rom       :: Create a read-only disk image.
 
   efly qemu      :: Boot a disk image using qemu.
@@ -69,7 +68,7 @@ cd efly/src/efly
 
 ## Set up an Efly System on a Block Devick
 
-You can use `efly dd` to install a preconfigured Arch Linux system directly on a given block device (keep in mind that this will wipe all data on that block device):
+You can use `efly dd` to set up efly directly on a given block device (keep in mind that this will wipe all data on that block device):
 
 ```
 efly dd /dev/sdX # wipe sdX and install efly
@@ -82,45 +81,6 @@ truncate --size=10G myimage.img
 efly dd myimage.img
 efly qemu myimage.img
 ```
-
-Installations created using `efly dd` have only two partitions: One EFI boot partition and one `ext4` root partition.
-
-## Packaging
-
-The created images are based on the Arch Linux operating system. You can install binary packages using [`pacman`](https://wiki.archlinux.org/title/Pacman).
-In addition to packages provided by mainline Arch Linux repositories, the [`ymerge`](https://github.com/flying-dude/ymerge) package manager provides extra packages available for install.
-These extra packages are compiled from source using [PKGBUILD](https://wiki.archlinux.org/title/PKGBUILD) package recipes.
-
-## UUIDs and Multiple Efly Devices
-
-Efly generates a
-[random uuid](https://github.com/flying-dude/efly/blob/a3a28b554b04e83987c33f8e0820a4688a5a306f/src/efly/efly-img#L295)
-for each partition, when it creates a disk image.
-That means each created disk image has its own unique partition
-[UUIDs](https://en.wikipedia.org/wiki/Universally_unique_identifier).
-
-The purpose of this procedure is to avoid name clashes between multiple images.
-However, there will still be name clashes when you put the *same* image on multiple devices, since these devices use the same UUIDs for their partitions.
-
-If you want to place efly on multiple devices (let's say you have multiple USB sticks with efly installed on them), it is recommended to generate a different disk image for each stick. Something like this should work:
-
-```
-efly img --out stick1
-efly img --out stick2
-```
-
-The disk images inside folders `stick1` and `stick2` will have the same software installed on them and use the same configuration, which means they are identical in a practical sense.
-But the randomly-generated portions during image creation will be different, so that a checksum algorithm would produce different results for both images.
-
-Randomly-generated portions includes at least the generated partition UUIDs and the
-[pacman keyring](https://wiki.archlinux.org/title/Pacman/Package_signing#Initializing_the_keyring).
-There are possibly other factors, that make the created disk images intentionally or unintentionally non-deterministic.
-But these two are guaranteed to make `efly img` produce a uniquely-identifiable result on each run.
-
-What exactly happens, when you place the same image on multiple USB sticks?
-That has not been tested for UUIDs.
-But in the case of identical partition labels, the kernel will happily boot from one device and use the root partition from another one.
-So at least there is no runtime error in that case. :-)
 
 ## Links
 
