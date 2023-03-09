@@ -50,21 +50,6 @@ inside a chroot environment after setting up a new system with `pacstrap`.
 The working directory is simply the root `/` of the new file system.
 Use this script to execute commands for further customization of your image.
 
-For `efly-img`, this script will run before compression of the root file system with squashfs.
+For `efly-rom`, this script will run before compression of the root file system with squashfs.
 That means changes made with this script are stored on the compressed squashfs partition.
-Since `efly-dd` has no squashfs partition, all data except EFI boot partition is stored on the same `ext4` partition.
-
-A number of environment variables are passed to the `postinst` script, depening on the install mode:
-
-* `efly-rom`:
-  * `EFLY_BOOT_UUID`: PARTUUID of the EFI boot partition.
-  * `EFLY_SQUASH_UUID`: PARTUUID of the squashfs partition.
-* `efly-img` and `efly-dd`:
-  * `EFLY_BOOT_UUID`: PARTUUID of the EFI boot partition.
-  * `EFLY_ROOT_UUID`: PARTUUID of the `ext4` root partition.
-
-Additionally, a variable `EFLY_MODE` helps the `postinst` script to distinguish between install modes:
-
-* `EFLY_MODE=img` for `efly-img`
-* `EFLY_MODE=dd` for `efly-dd`
-* `EFLY_MODE=rom` for `efly-rom`
+Since `efly-dd` and `efly-img` have no squashfs partition, all data except EFI boot partition is stored on the same `ext4` partition.

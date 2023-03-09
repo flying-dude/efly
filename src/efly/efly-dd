@@ -277,10 +277,7 @@ if postinst_script.is_file():
     sudo(["chmod", "+x", chroot_fs / "postinst"])
 
     # exec postinst inside chroot
-    chroot(chroot_fs, ["/postinst"],
-        EFLY_BOOT_UUID=boot_uuid,
-        EFLY_ROOT_UUID=root_uuid,
-        EFLY_MODE="dd")
+    chroot(chroot_fs, ["/postinst"])
 
     # cleanup postinst file after running it
     sudo(["rm", chroot_fs / "postinst"])
