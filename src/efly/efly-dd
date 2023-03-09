@@ -234,16 +234,18 @@ sudo(["mkdir", boot])
 sudo(["mount", f"{loop}p1", boot]); atexit.register(sudo, ["umount", boot])
 
 # copy extra files for efly-dd
-sudo(["cp", "--recursive", "--no-target-directory", data_dir / "extra" / "dd", chroot_fs])
-
-# insert UUID values in /etc/fstab
+sudo(["cp", "--archive", "--no-target-directory", data_dir / "extra" / "dd", chroot_fs])
 sudo(["sed", "--in-place", f"s/XXX__EFLY_ROOT_UUID__XXX/{root_uuid}/g", chroot_fs / "etc" / "fstab"])
 sudo(["sed", "--in-place", f"s/XXX__EFLY_EFI_UUID__XXX/{boot_uuid}/g", chroot_fs / "etc" / "fstab"])
 
 # copy user-defined filesystem data
 extra_files = profile_dir / "extra"
 if extra_files.is_dir():
-    sudo(["cp", "--recursive", "--no-target-directory", extra_files, chroot_fs])
+    sudo(["cp", "--archive", "--no-target-directory", extra_files, chroot_fs])
+
+# have everything inside chroot owned by root.
+# (git will store unix permissions but not file ownership. so we set it here manually.)
+sudo(["chown", "--recursive", "root:root", chroot_fs])
 
 # run pacstrap
 pacstrap(chroot_fs, packages)

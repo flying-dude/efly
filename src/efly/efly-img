@@ -210,6 +210,10 @@ extra_files = profile_dir / "extra"
 if extra_files.is_dir():
     sudo(["cp", "--recursive", "--no-target-directory", extra_files, chroot_fs])
 
+# have everything inside chroot owned by root.
+# (git will store unix permissions but not file ownership. so we set it here manually.)
+sudo(["chown", "--recursive", "root:root", chroot_fs])
+
 # run pacstrap
 pacstrap(chroot_fs, packages)
 

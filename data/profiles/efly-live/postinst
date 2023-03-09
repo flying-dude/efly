@@ -3,7 +3,7 @@
 set -ex
 
 # have user root use fish as login shell
-usermod --shell /bin/fish root
+usermod --shell /usr/bin/fish root
 
 # create user "efly" with groups suggested in arch wiki:
 # https://wiki.archlinux.org/title/users_and_groups#User_groups
