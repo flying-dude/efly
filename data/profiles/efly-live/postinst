@@ -26,6 +26,6 @@ pacman --sync --refresh --refresh --sysupgrade --sysupgrade --noconfirm
 chown --recursive efly:efly /ymerge-PKGBUILD/
 cd /ymerge-PKGBUILD/
 sudo --user=efly makepkg --syncdeps --rmdeps --install --noconfirm --needed
-sudo --user=efly ymerge --sync --yes efly calamares otter-browser
+sudo --user=efly ymerge --sync --yes efly otter-browser
 cd /
 rm -rf /ymerge-PKGBUILD/

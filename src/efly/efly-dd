@@ -3,12 +3,12 @@
 usage = f"""
 Usage: efly dd [options] <block-device>
 
-Install Arch Linux on the specified block device or disk image file.
+Put efly on a given specified block device or raw disk image.
 The created system will have two partitions. One EFI boot partition and one
 ext4 root partition. Default EFI size is 128M und root will use the remaining availabe
 disk space. Root can be made smaller with option --root-size.
 
-Note that this command will wipe all data on that block device before installing Arch Linux on it.
+Note that this command will wipe all data on that block device before installing efly on it.
 
 General Options:
   -h --help                  Show this screen.
