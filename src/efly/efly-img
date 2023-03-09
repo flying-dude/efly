@@ -42,7 +42,7 @@ from elib import *
 
 script_dir = Path(os.path.dirname(os.path.realpath(__file__)))
 data_dir = script_dir / "data" # TODO this should be a global variable
-profile_dir = data_dir / "profiles" / "img" # TODO this should also be a global variable. and separate from data_dir.
+profile_dir = data_dir / "profiles" / "efly-live" # TODO this should also be a global variable. and separate from data_dir.
 out_dir = Path("out")
 
 # parse cli
