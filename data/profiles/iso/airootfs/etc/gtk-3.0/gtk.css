@@ -1,6 +1,0 @@
-/*
- * https://wiki.archlinux.org/title/GTK#Remove_overlay_scroll_indicators
- * https://slackalaxy.com/2017/11/27/gtk3-overlay-scrollbars/
- * Remove dotted lines from GTK 3 applications.
- */
-undershoot.top, undershoot.right, undershoot.bottom, undershoot.left { background-image: none; }

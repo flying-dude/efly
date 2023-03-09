@@ -34,19 +34,19 @@ Options:
     --help -h             print help
 
     --accessibility -a    set accessibility support using brltty
-    --bios -b             set boot type to 'BIOS' (default)
+    --bios -b             set boot type to 'BIOS'
     --cdrom -c <image>    attach an additional optical disc image (e.g. for cloud-init)
     --hd -d               set image type to hard disk instead of optical disc
     --secure-boot -s      use Secure Boot (only relevant when using UEFI)
-    --uefi -u             set boot type to 'UEFI'
+    --uefi -u             set boot type to 'UEFI' (default)
     --vnc -v              use VNC display (instead of default SDL)
 
     --disable-kvm         run qemu with kvm disabled
     --offline             disable networking access
 
 Examples:
-    Run an iso image using UEFI mode:
-    $ ${app_name} --uefi archiso-2020.05.23-x86_64.iso
+    Run an iso image using BIOS boot:
+    $ ${app_name} --bios archiso-2020.05.23-x86_64.iso
 
     Use a raw disk image as a virtual hard drive:
     $ qemu-img create myimage.img 10G
@@ -195,7 +195,7 @@ run_image() {
 image=''
 oddimage=''
 accessibility=''
-boot_type='bios'
+boot_type='uefi'
 mediatype='cdrom'
 secure_boot='off'
 display='sdl'

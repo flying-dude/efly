@@ -311,8 +311,7 @@ atexit.register(sudo, ["losetup", "--detach", loop])
 
 # initialize partitions
 sudo(["mkfs.vfat", f"{loop}p1"])
-sudo(["cp", efly_live_sfs, f"{loop}p2"])
-sudo(["mkfs.ext4", f"{loop}p3"])
+sudo(["mkfs.ext4", f"{loop}p2"])
 
 # helper dir for mounting image partitions
 sudo(["mkdir", out_dir / "mnt"]); atexit.register(sudo, ["rmdir", out_dir / "mnt"])

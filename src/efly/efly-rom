@@ -21,7 +21,7 @@ General Options:
 
 Example:
     efly rom # create a bootable disk image in folder ./out
-    efly qemu --uefi out/efly-live.rom # boot in UEFI mode using qemu
+    efly qemu out/efly-live.rom # boot in UEFI mode using qemu
 """.lstrip().rstrip()
 
 import os, subprocess, atexit, sys, re, math

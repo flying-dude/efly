@@ -43,7 +43,7 @@ General Options:
 
 Example:
     efly rom # create a bootable disk image in folder ./out
-    efly qemu --uefi out/efly-live.rom # boot in UEFI mode using qemu
+    efly qemu out/efly-live.rom # boot using qemu
 ```
 
 ## Install `efly` Command Using PKGBUILD
@@ -80,6 +80,7 @@ It doesn't have to be a block device. You can also target a raw disk image:
 ```
 truncate --size=10G myimage.img
 efly dd myimage.img
+efly qemu myimage.img
 ```
 
 Installations created using `efly dd` have only two partitions: One EFI boot partition and one `ext4` root partition.

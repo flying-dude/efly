@@ -1,8 +1,0 @@
-[Unit]
-Description=Run script at boot for the efly live system.
-
-[Service]
-ExecStart=/usr/local/share/efly/autorun
-
-[Install]
-WantedBy=multi-user.target
