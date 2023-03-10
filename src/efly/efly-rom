@@ -264,21 +264,24 @@ efly_live_rom = out_dir / "efly-live.rom"
 # need +1 extra M for some reason here; otherwise the 3rd partition won't fit
 r(["truncate", f"--size={gpt_size_M + boot_size_M + sfs_size_M + 1}M", efly_live_rom])
 
-# create partitions using sgdisk
+# create: EFI System Partition
 r(["sgdisk",
-    "--new", f"1:0:+{boot_size_M}M",
+    "--new", f"1::+{boot_size_M}M",
     "--typecode", "1:EF00",
-    "--change-name", "1:efly-efi",
+    "--change-name", '1:"EFI System Partition"',
     "--partition-guid", f"1:{boot_uuid}",
     efly_live_rom])
 print()
 
-r(["sgdisk", "--new", f"2:0:+{sfs_size_M}M", "--change-name", "2:efly-squash", "--partition-guid", f"2:{squash_uuid}", efly_live_rom])
+# create: SquashFS Partition
+r(["sgdisk",
+    "--new", f"2::+{sfs_size_M}M",
+    "--change-name", '2:"Efly SquashFS"',
+    "--partition-guid", f"2:{squash_uuid}",
+    efly_live_rom])
 print()
 
-r(["sgdisk", "--print", efly_live_rom]); print()
-info(f"boot uuid: {boot_uuid}")
-info(f"squash uuid: {squash_uuid}")
+r(["sgdisk", "--print", efly_live_rom])
 print()
 
 # set up loop device
@@ -300,14 +303,14 @@ def cleanup_mount(from_, to):
     sudo(["mount", from_, to]); atexit.register(sudo, ["umount", to])
 
 # mount image partitions
-efi = mnt / "loop1"; cleanup_mount(f"{loop}p1", efi)
-lower = mnt / "loop2"; cleanup_mount(f"{loop}p2", lower)
+efi = mnt / "loop_p1"; cleanup_mount(f"{loop}p1", efi)
+lower = mnt / "loop_p2"; cleanup_mount(f"{loop}p2", lower)
 
 # copy helper /boot to real /boot
 cleanup_mount(grub_tmp, mnt / "boot")
 sudo(["cp", "--recursive", "--no-target-directory", mnt / "boot", efi])
 
-overlay = mnt / "loop3"
+overlay = mnt / "overlay"
 sudo(["mkdir", overlay])
 atexit.register(sudo, ["rmdir", overlay])
 
@@ -342,8 +345,7 @@ chroot(root, [
         "--target=x86_64-efi",
         "--efi-directory=/boot",
         f'--bootloader-id="Efly Live {month_year} [GRUB]"',
-        "--recheck",
-        "--removable", loop])
+        "--recheck", "--removable", loop])
 
 # copy grub config and assign variables inside the file
 sudo(["cp", script_dir / "data" / "grub.cfg", boot / "grub"])
