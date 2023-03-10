@@ -5,6 +5,7 @@
 The `efly` live system ships with its own command-line tool for creating bootable disk images.
 
 ```
+$ efly --help
 Usage: efly [subcommand] [options]
        efly <subcommand> --help
 
@@ -27,7 +28,7 @@ Usage: efly rom [options]
 Create a read-only, bootable raw disk image. File system changes are written to a temporary file system
 in RAM, when booting the system. Data will reset to a clean state, when rebooting (changes made are then lost).
 
-Currently requires a UEFI system for booting. Hybrid boot including BIOS is planned.
+Requires a UEFI system for booting.
 
 General Options:
   -h --help                  Show this screen.
@@ -42,7 +43,7 @@ General Options:
 
 Example:
     efly rom # create a bootable disk image in folder ./out
-    efly qemu out/efly-live.rom # boot using qemu
+    efly qemu out/efly-live.rom # boot in UEFI mode using qemu
 ```
 
 ## Install `efly` Command Using PKGBUILD
