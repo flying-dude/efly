@@ -46,6 +46,7 @@ unzip
 wget
 
 okular
+tilda
 
 # misc gui applications
 geany
