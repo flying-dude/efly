@@ -141,8 +141,9 @@ with open(package_txt) as lines:
 # create output directory
 out_dir.mkdir(exist_ok=True, parents=True)
 
-# have all "extra" data before pacstrap owned by root.
-chroot_fs = out_dir / "chroot-fs"; sudo(["mkdir", chroot_fs])
+# create chroot directory (as root, so that it is owned by root).
+chroot_fs = out_dir / "chroot-fs"
+sudo(["mkdir", chroot_fs])
 
 # grub-install will insist that the target location is a FAT partition.
 # but we need the full size of /boot folder before we can create the partition.
@@ -161,11 +162,6 @@ sudo(["mkdir", chroot_boot])
 sudo(["mount", grub_tmp, chroot_boot])
 atexit.register(sudo, ["umount", "--lazy", "--quiet", chroot_boot], ignore_error=True)
 
-# generate a random uuid for each partition
-import uuid
-boot_uuid = str(uuid.uuid4())
-squash_uuid = str(uuid.uuid4())
-
 # copy extra files for efly-rom
 sudo(["cp", "--recursive", "--no-target-directory", data_dir / "extra" / "rom", chroot_fs])
 
@@ -174,8 +170,7 @@ extra_files = profile_dir / "extra"
 if extra_files.is_dir():
     sudo(["cp", "--recursive", "--no-target-directory", extra_files, chroot_fs])
 
-# have everything inside chroot owned by root.
-# (git will store unix permissions but not file ownership. so we set it here manually.)
+# have all "extra" data, that exists before running pacstrap, owned by root.
 sudo(["chown", "--recursive", "root:root", chroot_fs])
 
 # run pacstrap
@@ -263,6 +258,11 @@ gpt_size_M = 1
 efly_live_rom = out_dir / "efly-live.rom"
 # need +1 extra M for some reason here; otherwise the 3rd partition won't fit
 r(["truncate", f"--size={gpt_size_M + boot_size_M + sfs_size_M + 1}M", efly_live_rom])
+
+# generate a random uuid for each partition
+import uuid
+boot_uuid = str(uuid.uuid4())
+squash_uuid = str(uuid.uuid4())
 
 # create: EFI System Partition
 r(["sgdisk",

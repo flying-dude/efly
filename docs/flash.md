@@ -37,31 +37,29 @@ $ ls /dev/sd*
 
 The USB stick we have just plugged in carries the device name **`sdc`**. The entries **`sdc1`** and **`sdc2`** are partitions, which we are going to overwrite (the iso image has its own partitioning).
 
-Next we are going to write the iso image to the stick. Be sure to have backups, since this will erase all data on the stick:
+Next we are going to write the iso image to the stick. This will erase all data currently on the stick:
 
 ```
 $ sudo cp efly-live.iso /dev/sdc
-$ sync
+$ sync # wait for I/O to finish
 ```
 
-I had situations where the **`cp`** command finished but when I rebooted the computer and tried to boot from the stick, it didn't work.
-It turned out the write operations were not complete despite the **`cp`** command terminating.
-Therefore, I always run **`sync`** in order to make sure the writes are complete:
+The **`cp`** command will terminate before the data is fully written to the stick.
+Run **`sync`** afterwards to see when the writes are finished.
 
 ```
 $ man sync
 sync - Synchronize cached writes to persistent storage
 ```
 
-## Graphical Tools
+## Links
 
-There are various graphical tools available for flashing USB sticks:
-
-* balenaEtcher: https://www.balena.io/etcher/
-  * Wikipedia Article: https://en.wikipedia.org/wiki/Etcher_(software)
-* Ubuntu Startup Disk Creator: https://ubuntu.com/tutorials/create-a-usb-stick-on-ubuntu
-  * AUR Package: https://aur.archlinux.org/packages/usb-creator
-  * Wikipedia Article: https://en.wikipedia.org/wiki/Startup_Disk_Creator
-* Fedora Media Writer: https://github.com/FedoraQt/MediaWriter
-  * AUR Package: https://aur.archlinux.org/packages/mediawriter
-  * Wikipedia Article: https://en.wikipedia.org/wiki/Fedora_Media_Writer
+* Graphical Tools for Flashing USB Sticks:
+  * balenaEtcher: https://www.balena.io/etcher/
+     * [\[Wikipedia\]](https://en.wikipedia.org/wiki/Etcher_\(software\))
+  * Ubuntu Startup Disk Creator: https://ubuntu.com/tutorials/create-a-usb-stick-on-ubuntu
+     * [\[Wikipedia\]](https://en.wikipedia.org/wiki/Startup_Disk_Creator) ---
+  [\[AUR\]](https://aur.archlinux.org/packages/usb-creator)
+  * Fedora Media Writer: https://github.com/FedoraQt/MediaWriter
+     * [\[Wikipedia\]](https://en.wikipedia.org/wiki/Fedora_Media_Writer) ---
+  [\[AUR\]](https://aur.archlinux.org/packages/mediawriter)
