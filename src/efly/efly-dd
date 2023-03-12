@@ -24,6 +24,18 @@ Size Options:                Unit in M, G or T (KiB, MiB, GiB, TiB resp.) - Exam
   --efi-size <size>          Set size of the EFI boot partition.
   --root-size <size>         Assign a size for the root partition, rather than to simply
                              use all remaining available storage for root partition.
+
+Examples:
+  Wipe block device sdx and install efly:
+  $ efly dd /dev/sdx
+
+  Create a raw disk image with efly installed on it:
+  $ truncate --size=10G myimage.img
+  $ efly dd myimage.img
+  $ efly qemu myimage.img
+
+  Use your own, custom profile:
+  $ efly dd --profile path/to/myprofile /dev/sdx
 """.lstrip().rstrip()
 
 import os, subprocess, atexit, sys, re, math, tempfile

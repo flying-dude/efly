@@ -20,8 +20,8 @@ General Options:
                              Useful for doing some manual tweaking or for debuggung.
 
 Example:
-    efly rom # create a bootable disk image in folder ./out
-    efly qemu out/efly-live.rom # boot in UEFI mode using qemu
+  efly rom # create a bootable disk image in folder ./out
+  efly qemu out/efly-live.rom # boot in UEFI mode using qemu
 """.lstrip().rstrip()
 
 import os, subprocess, atexit, sys, re, math
