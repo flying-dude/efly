@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: BSD-2-Clause
 
 pkgname=ymerge
-pkgver="0.0.6"
+pkgver="0.0.7"
 pkgrel=1
 pkgdesc="A Source-Based Package Manager for Arch Linux."
 arch=(x86_64)
@@ -13,14 +13,11 @@ provides=(ymerge)
 
 source=(
     "https://github.com/flying-dude/ymerge/archive/refs/tags/${pkgver}.zip"
-    "https://github.com/Jorengarenar/libXDGdirs/archive/84ab4117b787c4079965c98b4578a38b63795cc0.zip"
 )
 
-b2sums=('67b25b916a7941f682efcc0ae38d0080a1fb845866366c91628bae3d4db4797eeaacb172e3d52b1310b0a407b6ff5ba155966070cd263a54c7d34c0decec1f29'
-        '816f464b468ce668cb3bf4e869e683c045a8083ec43f020df2096189a408890e41b3ec7a26b72f06cf16ed31883228f810385968162baa5c87b61cdbe37004ff')
+b2sums=('0bf4dc9fda84f4526f3c40b125dc427c2d3487765b9072f416efcd4c5abfc24d6170cfceab9c18575611b68dcf6e96235b8841a557025fd719eba772d6badc12')
 
 build() {
-    cp --no-target-directory --recursive libXDGdirs-* ymerge-*/src/submodules/libxdgdirs/
     cd ymerge-*
 
     cmake -S . -B build -GNinja \
