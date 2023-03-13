@@ -1,46 +1,32 @@
 #!/usr/bin/fish
 # SPDX-License-Identifier: 0BSD
 
-# wrapper around yay/paru/pacman, that installs packages with "--noconfirm" option.
-# y firefox => sudo pacman --sync --noconfirm firefox
+# sudo wrapper around ymerge.
 
 # parse arguments. note that "argparse" will conveniently remove parsed arguments
-# from $argv and leave the remaining arguments intact: y -a fish firefox htop => fish firefox htop
+# from $argv and leave the remaining arguments intact: y -y fish firefox htop => fish firefox htop
 argparse h/help y/yes -- $argv
 or exit 1 # exit if argparse failed because it found an option it didn't recognize - it will print an error
 
 # print help and exit
 if set -q _flag_help
     echo \
-"Usage: y [-h|--help] [-y|--yes] [PACKAGES...]
+"Usage: y [-h|--help] [PACKAGES...]
 
-Wrapper script around yay/paru/pacman to install Arch Linux packages.
-Does a full system upgrade on empty input.
+Wrapper script around ymerge, that runs it with sudo.
+Does a system upgrade on empty input.
 
 Examples:
-    \$ y --yes # sudo pacman --sync --refresh --sysupgrade --noconfirm
-    \$ y firefox # sudo pacman --sync --noconfirm firefox"
+    \$ y         # sudo ymerge --sync --update
+    \$ y firefox # sudo ymerge firefox"
     exit 0
 end
 
-# determine which arch package manager to use
-if type -P yay &> /dev/null
-    set exe yay
-else if type -P paru &> /dev/null
-    set exe paru
-else
-    set exe sudo pacman
-end
-
-# add "--noconfirm" flag to pacman, if flag --yes was specified.
-if set -q _flag_yes
-    set exe $exe --noconfirm
-end
-
-# perform system upgrade if no arguments are given
+# perform system upgrade, if no arguments are given
 if test (count $argv) -lt 1
-    $exe --sync --refresh --sysupgrade
-    exit 0
+    sudo ymerge --sync --update
+    exit $status
 end
 
-$exe --sync --needed $argv
+sudo ymerge $argv
+exit $status
