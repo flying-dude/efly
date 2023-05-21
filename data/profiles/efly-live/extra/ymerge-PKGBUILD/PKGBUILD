@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: BSD-2-Clause
 
 pkgname=ymerge
-pkgver="0.0.7"
+pkgver="0.0.8"
 pkgrel=1
 pkgdesc="A Source-Based Package Manager for Arch Linux."
 arch=(x86_64)
@@ -15,7 +15,7 @@ source=(
     "https://github.com/flying-dude/ymerge/archive/refs/tags/${pkgver}.zip"
 )
 
-b2sums=('0bf4dc9fda84f4526f3c40b125dc427c2d3487765b9072f416efcd4c5abfc24d6170cfceab9c18575611b68dcf6e96235b8841a557025fd719eba772d6badc12')
+b2sums=('b34d3f532b878671ec96009b26ed04d6469cdc46004099423a163612729d4f7ffeb956a6a059965873d46afeb60c074489d7c982b364034f243517478a6f1a54')
 
 build() {
     cd ymerge-*
