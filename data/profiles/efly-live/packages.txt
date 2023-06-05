@@ -45,10 +45,10 @@ ripgrep
 unzip
 wget
 
+# misc gui applications
+firefox
 okular
 tilda
-
-# misc gui applications
 geany
 gparted
 tigervnc
