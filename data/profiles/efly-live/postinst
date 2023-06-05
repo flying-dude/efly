@@ -26,6 +26,8 @@ pacman --sync --refresh --refresh --sysupgrade --sysupgrade --noconfirm
 chown --recursive efly:efly /ymerge-PKGBUILD/
 cd /ymerge-PKGBUILD/
 sudo --user=efly makepkg --syncdeps --rmdeps --install --noconfirm --needed
-sudo --user=efly ymerge --sync --yes efly
 cd /
-rm -rf /ymerge-PKGBUILD/
+rm --recursive --force /ymerge-PKGBUILD/
+
+# install efly cli tool
+sudo ymerge --sync --yes efly
