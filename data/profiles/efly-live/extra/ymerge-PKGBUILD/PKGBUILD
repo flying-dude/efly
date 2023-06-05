@@ -1,24 +1,34 @@
 # SPDX-License-Identifier: BSD-2-Clause
 
 pkgname=ymerge
-pkgver="0.0.8"
+pkgver="0.0.10"
 pkgrel=1
 pkgdesc="A Source-Based Package Manager for Arch Linux."
 arch=(x86_64)
 url="https://github.com/flying-dude/ymerge/"
 license=(BSD)
-depends=(pacman fmt git abseil-cpp)
+depends=(pacman fmt git abseil-cpp sudo)
 makedepends=(cmake fmt nlohmann-json ninja)
 provides=(ymerge)
 
 source=(
     "https://github.com/flying-dude/ymerge/archive/refs/tags/${pkgver}.zip"
+    "https://github.com/flying-dude/auracle/archive/320130056f7a471fda44b06392ca8399575422ba.zip"
+    "https://github.com/flying-dude/pacman/archive/c2d4568d35173f92c17b6b93222bc101a63c9928.zip"
 )
 
-b2sums=('b34d3f532b878671ec96009b26ed04d6469cdc46004099423a163612729d4f7ffeb956a6a059965873d46afeb60c074489d7c982b364034f243517478a6f1a54')
+b2sums=('044a8887cbb6f66d8a1a33530df8b9627129eb325a0566f05d4a3cc10f1ae1ee7cf9a81f0562afbaa0a851020f9a14ffacf89e4e8e550ae57542298337b7b87c'
+        '25da964bf528f96a74d5156658a8e1abb3a3e1e6cfbe420b24537bcb83e8f4dea9113fddb846868a56efb9bc7e2a8a1407168bb655f8ba8ffcab97fc8544f1ef'
+        'ab3796e2ed879d638b494c73df92c9188ceb39ed18e8c158eea57969c5a76fb8bbb36dc5f283dd4cb275163878c3d5ff192c90253b721f5cecac39098f756884')
 
 build() {
-    cd ymerge-*
+    rm -r ymerge-${pkgver}/submodules/auracle
+    mv auracle-* ymerge-${pkgver}/submodules/auracle
+
+    rm -r ymerge-${pkgver}/submodules/pacman
+    mv pacman-* ymerge-${pkgver}/submodules/pacman
+
+    cd ymerge-${pkgver}
 
     cmake -S . -B build -GNinja \
         -DCMAKE_BUILD_TYPE=Release \
@@ -32,4 +42,10 @@ build() {
 package() {
     cd ymerge-*/build/
     DESTDIR="${pkgdir}" ninja install
+
+    # create a user "ymerge", that will build the packages
+    # https://man.archlinux.org/man/systemd-sysusers.8.en
+    mkdir --parents ${pkgdir}/usr/lib/sysusers.d
+    echo "u ymerge - \"build ymerge packages\"" > ${pkgdir}/usr/lib/sysusers.d/ymerge.conf
+    echo "m ymerge wheel" >> ${pkgdir}/usr/lib/sysusers.d/ymerge.conf
 }
