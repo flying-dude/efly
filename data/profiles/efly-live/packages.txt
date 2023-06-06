@@ -5,6 +5,9 @@ xorg-xinit
 xfce4
 xfce4-goodies
 
+lightdm
+lightdm-gtk-greeter
+
 # gvfs this needs to be installed, so that removable devices
 # are shown in xfce and thunar file manager
 gvfs

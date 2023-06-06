@@ -10,6 +10,14 @@ usermod --shell /usr/bin/fish root
 # note: not creating home. it already exists in "img/extra/" and "/etc/skel" has already been copied.
 useradd --no-create-home --groups adm,ftp,games,http,log,rfkill,sys,systemd-journal,uucp,wheel efly
 
+# https://wiki.archlinux.org/title/LightDM#Enabling_autologin
+groupadd --system autologin
+gpasswd --add efly autologin
+
+# https://wiki.archlinux.org/title/LightDM#Enabling_interactive_passwordless_login
+groupadd --system nopasswdlogin
+gpasswd --add efly nopasswdlogin
+
 # make sure efly home dir is actually owned by user efly
 chown --recursive efly:efly /home/efly
 
@@ -17,6 +25,7 @@ chown --recursive efly:efly /home/efly
 systemctl enable NetworkManager.service
 systemctl enable reflector.service
 systemctl enable bluetooth.service
+systemctl enable lightdm.service
 
 # update pacman mirror list and fetch package info
 reflector --latest 5 --sort rate --save /etc/pacman.d/mirrorlist
