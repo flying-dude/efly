@@ -46,6 +46,7 @@ out_dir = Path("out")
 
 # parse cli
 flag_shell = False
+flag_lz4 = False
 args = sys.argv[1:]
 while args and args[0].startswith("-"):
     if args[0] == "-h" or args[0] == "--help":
@@ -73,6 +74,11 @@ while args and args[0].startswith("-"):
             out_dir = Path(args[1])
             args = args[2:]
             continue
+
+    if args[0] == "--lz4":
+        flag_lz4 = True
+        args = args[1:]
+        continue
 
     if args[0] == "--nocolor":
         elib.colored_output = False
@@ -237,13 +243,14 @@ efly_live_sfs = out_dir / "efly-live.sfs"
 if efly_live_sfs.is_file():
     info(f"skipping mksquashfs. squashfs file already exists: {efly_live_sfs}")
 else:
-    # create a highly compressed squashfs archive
-    # https://techoverflow.net/2013/01/11/creating-a-highly-compressed-squashfs-from-a-folder/
-    sudo(["mksquashfs", chroot_fs, efly_live_sfs, "-b", "1048576", "-comp", "xz", "-Xdict-size", "100%"])
-
-    # for testing: faster compression with lz4
-    # https://unix.stackexchange.com/questions/256898/squashfs-minimal-compression
-    #sudo(["mksquashfs", chroot_fs, efly_live_sfs, "-comp", "lz4"])
+    if not flag_lz4:
+        # create a highly compressed squashfs archive
+        # https://techoverflow.net/2013/01/11/creating-a-highly-compressed-squashfs-from-a-folder/
+        sudo(["mksquashfs", chroot_fs, efly_live_sfs, "-b", "1048576", "-comp", "xz", "-Xdict-size", "100%"])
+    else:
+        # for testing: faster compression with lz4
+        # https://unix.stackexchange.com/questions/256898/squashfs-minimal-compression
+        sudo(["mksquashfs", chroot_fs, efly_live_sfs, "-comp", "lz4"])
 
 # calculate size of squashfs partition
 sfs_size_B = efly_live_sfs.stat().st_size
