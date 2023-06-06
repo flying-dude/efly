@@ -47,7 +47,6 @@ wget
 
 # misc gui applications
 firefox
-okular
 tilda
 geany
 gparted
