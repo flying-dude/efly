@@ -36,7 +36,11 @@ chown --recursive efly:efly /ymerge-PKGBUILD/
 cd /ymerge-PKGBUILD/
 sudo --user=efly makepkg --syncdeps --rmdeps --install --noconfirm --needed
 cd /
-rm --recursive --force /ymerge-PKGBUILD/
+rm --recursive /ymerge-PKGBUILD/
 
 # install efly cli tool
-sudo ymerge --sync --yes efly
+ymerge --sync --yes efly
+
+# delete unneeded files to reduce image size
+rm --recursive /var/cache/pacman/
+rm --recursive /var/cache/ymerge/
