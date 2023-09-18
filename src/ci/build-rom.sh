@@ -11,7 +11,7 @@ echo
 ls -hla
 echo
 
-wget --no-verbose http://ftp.snt.utwente.nl/pub/os/linux/archlinux/iso/2023.06.01/archlinux-bootstrap-2023.06.01-x86_64.tar.gz
+wget --no-verbose http://ftp.snt.utwente.nl/pub/os/linux/archlinux/iso/2023.09.01/archlinux-bootstrap-2023.09.01-x86_64.tar.gz
 b2sum --check data/b2sums.txt
 
 tar xzf archlinux-bootstrap-*-x86_64.tar.gz --numeric-owner
