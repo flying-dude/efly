@@ -2,13 +2,13 @@
 
 pkgname=ymerge
 pkgver="0.0.10"
-pkgrel=1
+pkgrel=2
 pkgdesc="A Source-Based Package Manager for Arch Linux."
 arch=(x86_64)
 url="https://github.com/flying-dude/ymerge/"
 license=(BSD)
-depends=(pacman fmt git abseil-cpp sudo)
-makedepends=(cmake fmt nlohmann-json ninja)
+depends=(pacman fmt git abseil-cpp)
+makedepends=(cmake fmt nlohmann-json ninja clang)
 provides=(ymerge)
 
 source=(
@@ -29,6 +29,7 @@ build() {
     mv pacman-* ymerge-${pkgver}/submodules/pacman
 
     cd ymerge-${pkgver}
+    export CXX=/usr/bin/clang++ # build fails with gcc currently
 
     cmake -S . -B build -GNinja \
         -DCMAKE_BUILD_TYPE=Release \
