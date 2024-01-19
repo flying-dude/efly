@@ -31,16 +31,15 @@ systemctl enable lightdm.service
 reflector --latest 5 --sort rate --save /etc/pacman.d/mirrorlist
 pacman --sync --refresh --refresh --sysupgrade --sysupgrade --noconfirm
 
+# TODO why is cache folder owned by root?
+rm -rf /home/efly/.cache
+
 # install ymerge package manager
-chown --recursive efly:efly /ymerge-PKGBUILD/
-cd /ymerge-PKGBUILD/
+chown --recursive efly:efly /yay-PKGBUILD/
+cd /yay-PKGBUILD/
 sudo --user=efly makepkg --syncdeps --rmdeps --install --noconfirm --needed
 cd /
-rm --recursive /ymerge-PKGBUILD/
-
-# install efly cli tool
-ymerge --sync --yes efly
+rm --recursive /yay-PKGBUILD/
 
 # delete unneeded files to reduce image size
 rm --recursive /var/cache/pacman/
-rm --recursive /var/cache/ymerge/
