@@ -27,17 +27,13 @@ systemctl enable reflector.service
 systemctl enable bluetooth.service
 systemctl enable lightdm.service
 
-# update pacman mirror list and fetch package info
-reflector --latest 5 --sort rate --save /etc/pacman.d/mirrorlist
-pacman --sync --refresh --refresh --sysupgrade --sysupgrade --noconfirm
-
 # TODO why is cache folder owned by root?
 rm -rf /home/efly/.cache
 
 # install ymerge package manager
 chown --recursive efly:efly /yay-PKGBUILD/
 cd /yay-PKGBUILD/
-sudo --user=efly makepkg --syncdeps --rmdeps --install --noconfirm --needed
+(cd /yay-PKGBUILD/; sudo --user=efly makepkg --syncdeps --rmdeps --install --noconfirm --needed)
 cd /
 rm --recursive /yay-PKGBUILD/
 

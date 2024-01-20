@@ -247,9 +247,15 @@ sudo(["mkfs.ext4", "-F", f"{loop}p2"])
 # mount root partition
 sudo(["mount", f"{loop}p2", chroot_fs]); atexit.register(sudo, ["umount", "--lazy", chroot_fs])
 
+# install base system
+sudo(["pacstrap", "-cGM", chroot_fs])
+
+# initialize pacman keyring
+chroot(chroot_fs, ["pacman-key", "--init"])
+chroot(chroot_fs, ["pacman-key", "--populate"])
+
 # mount boot partition
 boot = chroot_fs / "boot"
-sudo(["mkdir", boot])
 sudo(["mount", f"{loop}p1", boot]); atexit.register(sudo, ["umount", boot])
 
 # copy extra files for efly-dd
@@ -265,8 +271,18 @@ if extra_files.is_dir():
 # have all "extra" data before pacstrap owned by root.
 sudo(["chown", "--recursive", "root:root", chroot_fs])
 
-# run pacstrap
-pacstrap(chroot_fs, packages)
+# run pacstrap with user-defined packages
+sudo(["pacstrap", "-cGM", chroot_fs] + packages)
+
+# set up pacman mirrors
+r(["reflector", "--latest", "5", "--sort", "rate", "--save", tmp / "mirrorlist"])
+sudo(["mkdir", "-p", chroot_fs / "etc" / "pacman.d"])
+sudo(["mv", tmp / "mirrorlist", chroot_fs / "etc" / "pacman.d"])
+sudo(["chown", "root:root", chroot_fs / "etc" / "pacman.d" / "mirrorlist"])
+
+# do a full system upgrade
+chroot(chroot_fs, ["pacman", "--sync", "--refresh", "--refresh", "--sysupgrade", "--sysupgrade", "--noconfirm"])
+chroot(chroot_fs, ["locale-gen"]) # not sure if this is even needed.
 
 # obtain "month-year" for bootloader id
 import datetime
