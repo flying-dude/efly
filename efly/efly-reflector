@@ -3,3 +3,6 @@
 import sys
 import Reflector
 sys.exit(Reflector.run_main(configure_logging=True))
+
+#mirrorlist = Reflector.get_mirrors(latest=5, sort="rate")
+#print(mirrorlist)

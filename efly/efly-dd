@@ -142,7 +142,6 @@ if not block_device:
 cmd2pkg = [
     ("mkfs.vfat", "dosfstools"),
     ("mkfs.ext4", "e2fsprogs"),
-    ("pacstrap", "arch-install-scripts"),
     ("sgdisk", "gptfdisk"),
     ("sudo", "sudo")]
 

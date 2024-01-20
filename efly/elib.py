@@ -1,7 +1,11 @@
 import os, subprocess, atexit, sys, re, math, pathlib
 from pathlib import Path
+import Reflector as reflector
 
-__all__ = ["version", "log", "info", "error", "parse_size", "r", "sudo", "chroot", "get", "du", "colored_output", "pacstrap_base", "pacstrap_pkg"]
+__all__ = [
+    "version", "log", "info", "error", "parse_size", "r", "sudo", "chroot", "get", "du", "colored_output",
+    "pacstrap_base", "pacstrap_pkg", "reflector"
+]
 
 version = "UNKNOWN_VERSION"
 colored_output = True
@@ -192,8 +196,13 @@ def pacstrap_pkg(chroot_fs, packages, tmp):
         sudo(["pacstrap", "-c", chroot_fs] + packages)
         chroot(chroot_fs, ["pacman", "--sync", "--refresh", "--refresh", "--sysupgrade", "--sysupgrade", "--noconfirm"])
     else:
-        # set up pacman mirrors
-        r(["reflector", "--latest", "5", "--sort", "rate", "--save", tmp / "mirrorlist"])
+        # obtain mirror list
+        mirrorlist = reflector.get_mirrors(latest=5, sort="rate")
+        print(mirrorlist)
+        with open(tmp / "mirrorlist", 'w', encoding='utf-8') as handle:
+            handle.write(mirrorlist)
+
+        # move mirror list to the correct location
         sudo(["mkdir", "-p", chroot_fs / "etc" / "pacman.d"])
         sudo(["mv", tmp / "mirrorlist", chroot_fs / "etc" / "pacman.d"])
         sudo(["chown", "root:root", chroot_fs / "etc" / "pacman.d" / "mirrorlist"])

@@ -1092,8 +1092,35 @@ def process_options(options, mirrorstatus=None, mirrors=None):
 
     return mirrorstatus, mirrors
 
+def get_mirrors(latest=None, sort:str=None):
+    import types
+    options = types.SimpleNamespace()
+    options.connection_timeout = DEFAULT_CONNECTION_TIMEOUT
+    options.download_timeout = DEFAULT_DOWNLOAD_TIMEOUT
+    options.cache_timeout = DEFAULT_CACHE_TIMEOUT
+    options.completion_percent = 1.0
+    options.url = URL
+    options.threads = 0
+    options.countries = None
+    options.include = None
+    options.exclude = None
+    options.age = None
+    options.delay = None
+    options.protocols = None
+    options.isos = False
+    options.ipv4 = False
+    options.ipv6 = False
+    options.score = None
+    options.fastest = None
+    options.number = None
+    options.info = None
 
-def main(args=None, configure_logging=False):  # pylint: disable=too-many-branches
+    options.latest = latest if latest else None
+    options.sort = sort if sort else None
+
+    return main(options=options, use_as_lib=True)
+
+def main(args=None, configure_logging=False, options=None, use_as_lib=False):  # pylint: disable=too-many-branches
     '''
     Process command-line arguments and generate a mirror list.
     '''
@@ -1102,7 +1129,8 @@ def main(args=None, configure_logging=False):  # pylint: disable=too-many-branch
     else:
         cmd = sys.argv[1:]
 
-    options = parse_args(args)
+    if not options:
+        options = parse_args(args)
 
     # Configure logging.
     logger = get_logger()
@@ -1138,7 +1166,13 @@ def main(args=None, configure_logging=False):  # pylint: disable=too-many-branch
         if mirrorlist is None:
             sys.exit('error: no mirrors found')
     except MirrorStatusError as err:
-        sys.exit(f'error: {err.msg}')
+        if use_as_lib:
+            raise err
+        else:
+            sys.exit(f'error: {err.msg}')
+
+    if use_as_lib:
+        return mirrorlist
 
     if options.save:
         try:
