@@ -38,8 +38,6 @@ if($slashndx>=0) {
 
 &SanityCheck();
 
-&NotifyAboutDeprecation();
-
 #
 # Global variables.  You may want to configure some of these for
 # your site
@@ -887,10 +885,4 @@ sub SanityCheck
 	$AF_INET = &AF_INET;
 	$SOCK_STREAM = &SOCK_STREAM;
     }
-} 
-
-sub NotifyAboutDeprecation
-{
-    warn "\nWARNING: vncserver has been replaced by a systemd unit and is about to be removed in the next Fedora release.\n";
-    warn "Please read /usr/share/doc/tigervnc/HOWTO.md for more information.\n";
 }
