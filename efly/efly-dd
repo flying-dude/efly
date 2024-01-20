@@ -66,6 +66,15 @@ cli_efi_size_M = 128
 cli_root_size_M = None
 flag_shell = False
 args = sys.argv[1:]
+
+if len(args) == 0:
+    print(usage)
+    exit(0)
+
+if not sys.version_info >= (3, 11):
+    error('at least python version 3.11 is required. please update your python version.')
+    exit(1)
+
 while args:
     if args[0] == "-h" or args[0] == "--help":
         print(usage)
