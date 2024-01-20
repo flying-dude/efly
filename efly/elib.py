@@ -1,4 +1,4 @@
-import os, subprocess, atexit, sys, re, math
+import os, subprocess, atexit, sys, re, math, pathlib
 from pathlib import Path
 
 __all__ = ["version", "log", "info", "error", "parse_size", "r", "sudo", "chroot", "get", "du", "colored_output", "pacstrap_base", "pacstrap_pkg"]
@@ -130,14 +130,61 @@ def get(args, **kwargs):
 def du(path, **kwargs):
     return int(get(['sudo', 'du','--summarize', '--bytes', path], **kwargs).split()[0])
 
+# https://stackoverflow.com/questions/15644964/python-progress-bar-and-downloads
+import requests, tqdm
+def download(url: str, dest: pathlib.Path, chunk_size=1024):
+    resp = requests.get(url, stream=True)
+    total = int(resp.headers.get('content-length', 0))
+    with dest.open('wb') as file, tqdm.tqdm(
+        desc=dest.absolute().as_posix(),
+        total=total,
+        unit='iB',
+        unit_scale=True,
+        unit_divisor=1024,
+    ) as bar:
+        for data in resp.iter_content(chunk_size=chunk_size):
+            size = file.write(data)
+            bar.update(size)
+
+import hashlib
+def hash_download(url: str, dest: pathlib.Path, b2sum: str=None):
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    if not dest.exists():
+        download(url=url, dest=dest)
+    if b2sum:
+        with open(dest, "rb") as f:
+            b2sum_digest = hashlib.file_digest(f, "blake2b").hexdigest()
+            if not (b2sum_digest == b2sum):
+                error("failure in b2sum check:")
+                error(f"expected: {b2sum}")
+                error(f"found:    {b2sum_digest}")
+                raise RuntimeException("checksum fail")
+            else:
+                info("checksum: OK")
+
+# only install the base system
 def pacstrap_base(chroot_fs):
     if which("pacstrap"):
         sudo(["pacstrap", "-c", chroot_fs])
     else:
+        import platformdirs
+        dest = pathlib.Path(platformdirs.user_cache_dir("efly")) / "dd" / "archlinux-bootstrap-2024.01.01-x86_64.tar.gz"
+        hash_download(
+            url = "https://ftp.snt.utwente.nl/pub/os/linux/archlinux/iso/2024.01.01/archlinux-bootstrap-2024.01.01-x86_64.tar.gz",
+            dest = dest,
+            b2sum = "277b08feec4ea0e01af7ab46165f90ea0ce86b9eec4f6eb28d638879737b19e8b8c1d4693804539fd0a3aa4cdea549069b9ad596b2b9ddff9b7153fddd2ff16d"
+        )
+
+        sudo(["tar", "-C", chroot_fs, "--numeric-owner", "--xattrs", "--xattrs-include='*'", "-xpf", dest])
+        for f in (chroot_fs / 'root.x86_64').iterdir():
+            sudo(["mv", f.absolute().as_posix(), chroot_fs])
+        sudo(["rmdir", chroot_fs / 'root.x86_64'])
+
         # initialize pacman keyring
         chroot(chroot_fs, ["pacman-key", "--init"])
         chroot(chroot_fs, ["pacman-key", "--populate"])
 
+# install user-defined packages
 def pacstrap_pkg(chroot_fs, packages):
     if which("pacstrap"):
         sudo(["pacstrap", "-c", chroot_fs] + packages)

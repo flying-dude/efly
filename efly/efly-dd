@@ -267,7 +267,7 @@ if extra_files.is_dir():
 # have all "extra" data before pacstrap owned by root.
 sudo(["chown", "--recursive", "root:root", chroot_fs])
 
-# run pacstrap with user-defined packages
+# run pacstrap for user-defined packages
 pacstrap_pkg(chroot_fs, packages)
 
 # do a full system upgrade
