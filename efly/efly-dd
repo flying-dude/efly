@@ -1,7 +1,11 @@
 #!/usr/bin/python
 
+import elib
+
 usage = f"""
 Usage: efly dd [options] <block-device>
+
+Version: {elib.version}
 
 Put efly on a given specified block device or raw disk image.
 The created system will have two partitions. One EFI boot partition and one
@@ -50,7 +54,6 @@ def my_except_hook(exctype, value, traceback):
         sys.__excepthook__(exctype, value, traceback)
 sys.excepthook = my_except_hook
 
-import elib
 from elib import *
 
 script_dir = Path(os.path.dirname(os.path.realpath(__file__)))
@@ -69,7 +72,7 @@ while args:
         exit(0)
 
     if args[0] == "-v" or args[0] == "--version":
-        print(version)
+        print(elib.version)
         exit(0)
 
     if args[0] == "--efi-size":

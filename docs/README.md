@@ -9,41 +9,55 @@ $ efly --help
 Usage: efly [subcommand] [options]
        efly <subcommand> --help
 
-Version: 0.0.7
+Version: 0.0.15
 
 Create and manage bootable disk images based on Arch Linux.
 
 Subcommands:
-  efly dd        :: Create an efly system directly on a given block device.
-  efly rom       :: Create a read-only disk image.
-
+  efly dd        :: Install efly on a given block device.
   efly qemu      :: Boot a disk image using qemu.
   efly vncserver :: Launch a VNC server using TigerVNC.
 ```
 
 ```
-$ efly rom --help
-Usage: efly rom [options]
+$ efly dd --help
+Usage: efly dd [options] <block-device>
 
-Create a read-only, bootable raw disk image. File system changes are written to a temporary file system
-in RAM, when booting the system. Data will reset to a clean state, when rebooting (changes made are then lost).
+Version: 0.0.15
 
-Requires a UEFI system for booting.
+Put efly on a given specified block device or raw disk image.
+The created system will have two partitions. One EFI boot partition and one
+ext4 root partition. Default EFI size is 128M und root will use the remaining availabe
+disk space. Root can be made smaller with option --root-size.
+
+Note that this command will wipe all data on that block device before installing efly on it.
 
 General Options:
   -h --help                  Show this screen.
   -v --version               Print version info.
 
-  --out <out-dir>            Choose output directory instead of out/ inside current working directory.
   --profile <profile-dir>    Use a custom profile instead of default profile.
 
   --nocolor                  Deactivate colored output.
   --shell                    Launch an interactive shell after running the postinst script.
                              Useful for doing some manual tweaking or for debuggung.
 
-Example:
-    efly rom # create a bootable disk image in folder ./out
-    efly qemu out/efly-live.rom # boot in UEFI mode using qemu
+Size Options:                Unit in M, G or T (KiB, MiB, GiB, TiB resp.) - Example: 128M
+  --efi-size <size>          Set size of the EFI boot partition.
+  --root-size <size>         Assign a size for the root partition, rather than to simply
+                             use all remaining available storage for root partition.
+
+Examples:
+  Wipe block device sdx and install efly:
+  $ efly dd /dev/sdx
+
+  Create a raw disk image with efly installed on it:
+  $ truncate --size=10G myimage.img
+  $ efly dd myimage.img
+  $ efly qemu myimage.img
+
+  Use your own, custom profile:
+  $ efly dd --profile path/to/myprofile /dev/sdx
 ```
 
 ## Install `efly` Command Using PKGBUILD
