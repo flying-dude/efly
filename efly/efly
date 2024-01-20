@@ -14,6 +14,7 @@ Create and manage bootable disk images based on Arch Linux.
 Subcommands:
   efly dd        :: Install efly on a given block device.
   efly qemu      :: Boot a disk image using qemu.
+  efly reflector :: Update pacman mirror list.
   efly vncserver :: Launch a VNC server using TigerVNC.
 """.lstrip().rstrip()
 
@@ -29,7 +30,7 @@ if len(sys.argv) == 1 or sys.argv[1] == "-h" or sys.argv[1] == "--help":
 
 cmd = sys.argv[1]
 args = sys.argv[2:]
-if cmd == "dd" or cmd == "qemu" or cmd == "vncserver":
+if cmd == "dd" or cmd == "qemu" or cmd == "reflector" or cmd == "vncserver":
     completed_process = subprocess.run([script_dir / f"efly-{cmd}"] + args)
     exit(completed_process.returncode)
 else:
