@@ -186,10 +186,6 @@ def pacstrap_base(chroot_fs):
             sudo(["mv", f.absolute().as_posix(), chroot_fs])
         sudo(["rmdir", chroot_fs / 'root.x86_64'])
 
-        # initialize pacman keyring
-        chroot(chroot_fs, ["pacman-key", "--init"])
-        chroot(chroot_fs, ["pacman-key", "--populate"])
-
 # install user-defined packages
 def pacstrap_pkg(chroot_fs, packages, tmp):
     if which("pacstrap"):

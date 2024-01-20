@@ -256,10 +256,6 @@ sudo(["mount", f"{loop}p2", chroot_fs]); atexit.register(sudo, ["umount", "--laz
 # install base system
 pacstrap_base(chroot_fs)
 
-# mount boot partition
-boot = chroot_fs / "boot"
-sudo(["mount", f"{loop}p1", boot]); atexit.register(sudo, ["umount", boot])
-
 # copy extra files for efly-dd
 sudo(["cp", "--archive", "--no-target-directory", data_dir / "extra" / "dd", chroot_fs])
 sudo(["sed", "--in-place", f"s/XXX__EFLY_ROOT_UUID__XXX/{root_uuid}/g", chroot_fs / "etc" / "fstab"])
@@ -271,7 +267,16 @@ if extra_files.is_dir():
     sudo(["cp", "--archive", "--no-target-directory", extra_files, chroot_fs])
 
 # have all "extra" data before pacstrap owned by root.
-#sudo(["chown", "--recursive", "root:root", chroot_fs])
+sudo(["chown", "--recursive", "root:root", chroot_fs])
+
+# mount boot partition
+boot = chroot_fs / "boot"
+sudo(["mount", f"{loop}p1", boot]); atexit.register(sudo, ["umount", boot])
+
+# initialize pacman keyring when building from bootstrap tarball
+if not which("pacstrap"):
+    chroot(chroot_fs, ["pacman-key", "--init"])
+    chroot(chroot_fs, ["pacman-key", "--populate"])
 
 # run pacstrap for user-defined packages
 pacstrap_pkg(chroot_fs, packages, tmp)
