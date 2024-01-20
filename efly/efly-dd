@@ -132,9 +132,11 @@ while args:
         error("no block device specified.")
         exit(1)
 
-    if not Path(block_device).exists():
-        error(f"specified block device does not exist: {block_device}")
-        exit(1)
+    block_device = Path(block_device)
+    if not block_device.exists():
+        info(f"specified block device does not exist: {block_device}")
+        info(f"creating raw disk image: {block_device}")
+        r(["truncate", "--size=10G", block_device])
 
     info(f"installing on block device: {block_device}")
 
@@ -269,7 +271,7 @@ if extra_files.is_dir():
     sudo(["cp", "--archive", "--no-target-directory", extra_files, chroot_fs])
 
 # have all "extra" data before pacstrap owned by root.
-sudo(["chown", "--recursive", "root:root", chroot_fs])
+#sudo(["chown", "--recursive", "root:root", chroot_fs])
 
 # run pacstrap for user-defined packages
 pacstrap_pkg(chroot_fs, packages, tmp)
