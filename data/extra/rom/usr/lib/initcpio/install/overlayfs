@@ -1,8 +1,0 @@
-#!/bin/bash
-# SPDX-License-Identifier: GPL-3.0-or-later
-# https://github.com/felixsinger/mkinitcpio-overlayfs/blob/master/mkinitcpio-overlayfs.install
-
-build() {
-    add_module "overlay"
-    add_runscript
-}
