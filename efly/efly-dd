@@ -250,10 +250,6 @@ sudo(["mount", f"{loop}p2", chroot_fs]); atexit.register(sudo, ["umount", "--laz
 # install base system
 pacstrap_base(chroot_fs)
 
-# initialize pacman keyring
-chroot(chroot_fs, ["pacman-key", "--init"])
-chroot(chroot_fs, ["pacman-key", "--populate"])
-
 # mount boot partition
 boot = chroot_fs / "boot"
 sudo(["mount", f"{loop}p1", boot]); atexit.register(sudo, ["umount", boot])
@@ -270,15 +266,6 @@ if extra_files.is_dir():
 
 # have all "extra" data before pacstrap owned by root.
 sudo(["chown", "--recursive", "root:root", chroot_fs])
-
-# set up pacman mirrors
-r(["reflector", "--latest", "5", "--sort", "rate", "--save", tmp / "mirrorlist"])
-sudo(["mkdir", "-p", chroot_fs / "etc" / "pacman.d"])
-sudo(["mv", tmp / "mirrorlist", chroot_fs / "etc" / "pacman.d"])
-sudo(["chown", "root:root", chroot_fs / "etc" / "pacman.d" / "mirrorlist"])
-
-# update package database
-chroot(chroot_fs, ["pacman", "--sync", "--refresh", "--refresh"])
 
 # run pacstrap with user-defined packages
 pacstrap_pkg(chroot_fs, packages)

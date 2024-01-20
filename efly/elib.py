@@ -131,7 +131,23 @@ def du(path, **kwargs):
     return int(get(['sudo', 'du','--summarize', '--bytes', path], **kwargs).split()[0])
 
 def pacstrap_base(chroot_fs):
-    sudo(["pacstrap", "-cGM", chroot_fs])
+    if which("pacstrap"):
+        sudo(["pacstrap", "-c", chroot_fs])
+    else:
+        # initialize pacman keyring
+        chroot(chroot_fs, ["pacman-key", "--init"])
+        chroot(chroot_fs, ["pacman-key", "--populate"])
 
 def pacstrap_pkg(chroot_fs, packages):
-    sudo(["pacstrap", "-cGM", chroot_fs] + packages)
+    if which("pacstrap"):
+        sudo(["pacstrap", "-c", chroot_fs] + packages)
+        chroot(chroot_fs, ["pacman", "--sync", "--refresh", "--refresh"])
+    else:
+        # set up pacman mirrors
+        r(["reflector", "--latest", "5", "--sort", "rate", "--save", tmp / "mirrorlist"])
+        sudo(["mkdir", "-p", chroot_fs / "etc" / "pacman.d"])
+        sudo(["mv", tmp / "mirrorlist", chroot_fs / "etc" / "pacman.d"])
+        sudo(["chown", "root:root", chroot_fs / "etc" / "pacman.d" / "mirrorlist"])
+
+        # update package database
+        chroot(chroot_fs, ["pacman", "--sync", "--refresh", "--refresh"])
