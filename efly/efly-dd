@@ -127,16 +127,21 @@ while args:
         continue
 
     block_device = args[0]
+
+    if not block_device:
+        error("no block device specified.")
+        exit(1)
+
+    if not Path(block_device).exists():
+        error(f"specified block device does not exist: {block_device}")
+        exit(1)
+
     info(f"installing on block device: {block_device}")
 
     args = args[1:]
     if args:
         error(f'excess arguments: {args}')
         exit(1)
-
-if not block_device:
-    error("no block device specified.")
-    exit(1)
 
 # list of required shell commands together with their corresponding packages
 cmd2pkg = [
