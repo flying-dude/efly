@@ -268,11 +268,10 @@ if extra_files.is_dir():
 sudo(["chown", "--recursive", "root:root", chroot_fs])
 
 # run pacstrap for user-defined packages
-pacstrap_pkg(chroot_fs, packages)
+pacstrap_pkg(chroot_fs, packages, tmp)
 
-# do a full system upgrade
-chroot(chroot_fs, ["pacman", "--sync", "--sysupgrade", "--sysupgrade", "--noconfirm"])
-chroot(chroot_fs, ["locale-gen"]) # not sure if this is even needed.
+# not sure if this is needed
+chroot(chroot_fs, ["locale-gen"])
 
 # obtain "month-year" for bootloader id
 import datetime

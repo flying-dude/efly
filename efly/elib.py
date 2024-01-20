@@ -167,6 +167,7 @@ def pacstrap_base(chroot_fs):
     if which("pacstrap"):
         sudo(["pacstrap", "-c", chroot_fs])
     else:
+        # download bootstrap tarball
         import platformdirs
         dest = pathlib.Path(platformdirs.user_cache_dir("efly")) / "dd" / "archlinux-bootstrap-2024.01.01-x86_64.tar.gz"
         hash_download(
@@ -175,6 +176,7 @@ def pacstrap_base(chroot_fs):
             b2sum = "277b08feec4ea0e01af7ab46165f90ea0ce86b9eec4f6eb28d638879737b19e8b8c1d4693804539fd0a3aa4cdea549069b9ad596b2b9ddff9b7153fddd2ff16d"
         )
 
+        # unpack archive and move files to the correct location
         sudo(["tar", "-C", chroot_fs, "--numeric-owner", "--xattrs", "--xattrs-include='*'", "-xpf", dest])
         for f in (chroot_fs / 'root.x86_64').iterdir():
             sudo(["mv", f.absolute().as_posix(), chroot_fs])
@@ -185,10 +187,10 @@ def pacstrap_base(chroot_fs):
         chroot(chroot_fs, ["pacman-key", "--populate"])
 
 # install user-defined packages
-def pacstrap_pkg(chroot_fs, packages):
+def pacstrap_pkg(chroot_fs, packages, tmp):
     if which("pacstrap"):
         sudo(["pacstrap", "-c", chroot_fs] + packages)
-        chroot(chroot_fs, ["pacman", "--sync", "--refresh", "--refresh"])
+        chroot(chroot_fs, ["pacman", "--sync", "--refresh", "--refresh", "--sysupgrade", "--sysupgrade", "--noconfirm"])
     else:
         # set up pacman mirrors
         r(["reflector", "--latest", "5", "--sort", "rate", "--save", tmp / "mirrorlist"])
@@ -196,5 +198,5 @@ def pacstrap_pkg(chroot_fs, packages):
         sudo(["mv", tmp / "mirrorlist", chroot_fs / "etc" / "pacman.d"])
         sudo(["chown", "root:root", chroot_fs / "etc" / "pacman.d" / "mirrorlist"])
 
-        # update package database
-        chroot(chroot_fs, ["pacman", "--sync", "--refresh", "--refresh"])
+        # finally install requested packages
+        chroot(chroot_fs, ["pacman", "--sync", "--refresh", "--refresh", "--sysupgrade", "--sysupgrade", "--noconfirm"] + packages)

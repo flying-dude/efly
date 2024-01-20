@@ -30,7 +30,7 @@ systemctl enable lightdm.service
 # TODO why is cache folder owned by root?
 rm -rf /home/efly/.cache
 
-# install ymerge package manager
+# install yay AUR helper
 chown --recursive efly:efly /yay-PKGBUILD/
 cd /yay-PKGBUILD/
 (cd /yay-PKGBUILD/; sudo --user=efly makepkg --syncdeps --rmdeps --install --noconfirm --needed)
