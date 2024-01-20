@@ -33,7 +33,7 @@ rm -rf /home/efly/.cache
 # install yay AUR helper
 chown --recursive efly:efly /yay-PKGBUILD/
 cd /yay-PKGBUILD/
-(cd /yay-PKGBUILD/; sudo --user=efly makepkg --syncdeps --rmdeps --install --noconfirm --needed)
+#(cd /yay-PKGBUILD/; sudo --user=efly makepkg --syncdeps --rmdeps --install --noconfirm --needed)
 cd /
 rm --recursive /yay-PKGBUILD/
 
