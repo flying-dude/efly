@@ -43,6 +43,7 @@ tk
 bat
 htop
 ncdu
+python-pipx
 restic
 ripgrep
 unzip
