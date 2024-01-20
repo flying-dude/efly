@@ -140,16 +140,20 @@ if not block_device:
 
 # list of required shell commands together with their corresponding packages
 cmd2pkg = [
-    ("arch-chroot", "arch-install-scripts"),
     ("mkfs.vfat", "dosfstools"),
     ("mkfs.ext4", "e2fsprogs"),
     ("pacstrap", "arch-install-scripts"),
     ("sgdisk", "gptfdisk"),
     ("sudo", "sudo")]
 
+missing_pkg = False
+
+if not elib.get_chroot_cmd():
+    error("cannot chroot. install either of these commands: arch-chroot chroot")
+    missing_pkg = True
+
 # check for presence of required shell commands
 from shutil import which
-missing_pkg = False
 for cmd, pkg in cmd2pkg:
     if which(cmd) is None:
         error(f"missing shell command '{cmd}'. if running arch linux, install with: pacman --sync {pkg}")
@@ -241,7 +245,7 @@ sudo(["mkfs.vfat", f"{loop}p1"])
 sudo(["mkfs.ext4", "-F", f"{loop}p2"])
 
 # mount root partition
-sudo(["mount", f"{loop}p2", chroot_fs]); atexit.register(sudo, ["umount", chroot_fs])
+sudo(["mount", f"{loop}p2", chroot_fs]); atexit.register(sudo, ["umount", "--lazy", chroot_fs])
 
 # mount boot partition
 boot = chroot_fs / "boot"

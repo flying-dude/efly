@@ -67,31 +67,60 @@ def r(args, ignore_error=False, **kwargs):
 def sudo(args, **kwargs):
         return r(["sudo"] + args, **kwargs)
 
+from shutil import which
+import subprocess
+def get_chroot_cmd():
+    # check if systemd is running: https://superuser.com/questions/1017959/how-to-know-if-i-am-using-systemd-on-linux
+    #if which("systemd-nspawn") and subprocess.getoutput("ps --no-headers -o comm 1") == "systemd":
+        #return "systemd-nspawn"
+    if which("arch-chroot"):
+        return "arch-chroot"
+    if which("chroot"):
+        return "chroot"
+    return None
+
 # run a command inside chroot. note that we don't pass **kwargs to python subcommand.
 # instead, we use **kwargs here to define environment variables to be used inside chroot. if we were
 # to define **kwargs and pass that verbatim to python subcommand, then env would only be passed to "arch-chroot"
 # but not available inside the actual chroot (which is what we want).
+import atexit
+chroot_initialized = False
 def chroot(path, args, **kwargs):
-    path = Path(path) # make sure path is an actual Path()
+    path = Path(path) # make sure path is an actual Path() object
+
+    global chroot_initialized
+    if not chroot_initialized:
+        match get_chroot_cmd():
+            case "chroot":
+                sudo(["cp", "/etc/resolv.conf", path / "etc"])
+
+                for mnt in ["proc", "sys", "dev"]:
+                    sudo(["mount", "--bind", f"/{mnt}", path / mnt])
+                    atexit.register(sudo, ["umount", "--lazy", "--quiet", path / mnt], ignore_error=True)
+
+            case "arch-chroot":
+                # safety unmount, since unmount of arch-chroot is not 100% reliable
+                for mnt in ["proc", "sys", "dev"]:
+                    atexit.register(sudo, ["umount", "--lazy", "--quiet", path / mnt], ignore_error=True)
+
+        chroot_initialized = True
 
     # assign optional environment variables to command, passed as **kwargs
-    cmd = []
+    env = []
     for key, value in kwargs.items():
         print(f"{key}={value}")
-        cmd += [f"{key}={value}"]
+        env += [f"{key}={value}"]
 
-    cmd += ["arch-chroot", path] + args
-    returncode = sudo(cmd)
-
-    # do a safety lazy umount:
-    # umount after chroot often does not go smoothly/reliably. try lazy umount here to umount stuff that is still mounted.
-    # umount will error, in case path in question has already been umounted successfully.
-    # this is actually what we want anyway, so not really an error. therefore, we can ignore umount error here.
-    sudo(["umount", "--lazy", "--quiet", path / "dev"], ignore_error=True)
-    sudo(["umount", "--lazy", "--quiet", path / "proc"], ignore_error=True)
-    sudo(["umount", "--lazy", "--quiet", path / "sys"], ignore_error=True)
-
-    return returncode
+    match get_chroot_cmd():
+        case "systemd-nspawn":
+            return sudo(env + ["systemd-nspawn", "--quiet", "-D"] + [path] + args)
+        case "arch-chroot":
+            return sudo(env + ["arch-chroot", path] + args)
+        case "chroot":
+            return sudo(env + ["chroot", path] + args)
+        case _:
+            # this should never happen since we check at program start that a command is available
+            raise RuntimeError("Could not find chroot command. Either of: arch-chroot chroot")
 
 def get(args, **kwargs):
     log(light_cyan("get"), ' '.join(str(arg) for arg in args))
