@@ -248,7 +248,7 @@ sudo(["mkfs.ext4", "-F", f"{loop}p2"])
 sudo(["mount", f"{loop}p2", chroot_fs]); atexit.register(sudo, ["umount", "--lazy", chroot_fs])
 
 # install base system
-sudo(["pacstrap", "-cGM", chroot_fs])
+pacstrap_base(chroot_fs)
 
 # initialize pacman keyring
 chroot(chroot_fs, ["pacman-key", "--init"])
@@ -271,17 +271,20 @@ if extra_files.is_dir():
 # have all "extra" data before pacstrap owned by root.
 sudo(["chown", "--recursive", "root:root", chroot_fs])
 
-# run pacstrap with user-defined packages
-sudo(["pacstrap", "-cGM", chroot_fs] + packages)
-
 # set up pacman mirrors
 r(["reflector", "--latest", "5", "--sort", "rate", "--save", tmp / "mirrorlist"])
 sudo(["mkdir", "-p", chroot_fs / "etc" / "pacman.d"])
 sudo(["mv", tmp / "mirrorlist", chroot_fs / "etc" / "pacman.d"])
 sudo(["chown", "root:root", chroot_fs / "etc" / "pacman.d" / "mirrorlist"])
 
+# update package database
+chroot(chroot_fs, ["pacman", "--sync", "--refresh", "--refresh"])
+
+# run pacstrap with user-defined packages
+pacstrap_pkg(chroot_fs, packages)
+
 # do a full system upgrade
-chroot(chroot_fs, ["pacman", "--sync", "--refresh", "--refresh", "--sysupgrade", "--sysupgrade", "--noconfirm"])
+chroot(chroot_fs, ["pacman", "--sync", "--sysupgrade", "--sysupgrade", "--noconfirm"])
 chroot(chroot_fs, ["locale-gen"]) # not sure if this is even needed.
 
 # obtain "month-year" for bootloader id

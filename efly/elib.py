@@ -1,7 +1,7 @@
 import os, subprocess, atexit, sys, re, math
 from pathlib import Path
 
-__all__ = ["version", "log", "info", "error", "parse_size", "r", "sudo", "chroot", "get", "du", "colored_output"]
+__all__ = ["version", "log", "info", "error", "parse_size", "r", "sudo", "chroot", "get", "du", "colored_output", "pacstrap_base", "pacstrap_pkg"]
 
 version = "UNKNOWN_VERSION"
 colored_output = True
@@ -129,3 +129,9 @@ def get(args, **kwargs):
 # obtain disk usage in bytes
 def du(path, **kwargs):
     return int(get(['sudo', 'du','--summarize', '--bytes', path], **kwargs).split()[0])
+
+def pacstrap_base(chroot_fs):
+    sudo(["pacstrap", "-cGM", chroot_fs])
+
+def pacstrap_pkg(chroot_fs, packages):
+    sudo(["pacstrap", "-cGM", chroot_fs] + packages)
