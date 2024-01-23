@@ -1,3 +1,5 @@
+SETUVAR --export EDITOR:micro
+
 SETUVAR _fish_abbr_gb:git\x20branch
 SETUVAR _fish_abbr_gco:git\x20checkout
 SETUVAR _fish_abbr_gd:git\x20diff

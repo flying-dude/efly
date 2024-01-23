@@ -1,3 +1,5 @@
+SETUVAR --export EDITOR:micro
+
 SETUVAR _fish_abbr_gb:git\x20branch
 SETUVAR _fish_abbr_gco:git\x20checkout
 SETUVAR _fish_abbr_gd:git\x20diff
@@ -6,5 +8,3 @@ SETUVAR _fish_abbr_gs:git\x20status
 
 SETUVAR _fish_abbr_l:ls\x20\x2dhl
 SETUVAR _fish_abbr_f:find\x20\x2e\x20\x7c\x20grep
-
-SETUVAR _fish_abbr_y:sudo\x20ymerge
