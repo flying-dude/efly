@@ -1,4 +1,5 @@
 SETUVAR --export EDITOR:micro
+SETUVAR --export CMAKE_GENERATOR:Ninja
 
 SETUVAR _fish_abbr_gb:git\x20branch
 SETUVAR _fish_abbr_gco:git\x20checkout
