@@ -162,22 +162,22 @@ def hash_download(url: str, dest: pathlib.Path, b2sum: str=None):
                 error("failure in b2sum check:")
                 error(f"expected: {b2sum}")
                 error(f"found:    {b2sum_digest}")
-                raise RuntimeException("checksum fail")
+                raise RuntimeError("checksum fail")
             else:
                 info("checksum: OK")
 
 # only install the base system
 def pacstrap_base(chroot_fs):
-    if which("pacstrap"):
+    if which("pacstrap") and which("pacman"):
         sudo(["pacstrap", "-c", chroot_fs])
     else:
         # download bootstrap tarball
         import platformdirs
-        dest = pathlib.Path(platformdirs.user_cache_dir("efly")) / "dd" / "archlinux-bootstrap-2024.01.01-x86_64.tar.gz"
+        dest = pathlib.Path(platformdirs.user_cache_dir("efly")) / "dd" / "archlinux-bootstrap-2024.05.01-x86_64.tar.zst"
         hash_download(
-            url = "https://ftp.snt.utwente.nl/pub/os/linux/archlinux/iso/2024.01.01/archlinux-bootstrap-2024.01.01-x86_64.tar.gz",
+            url = "https://ftp.snt.utwente.nl/pub/os/linux/archlinux/iso/2024.05.01/archlinux-bootstrap-2024.05.01-x86_64.tar.zst",
             dest = dest,
-            b2sum = "277b08feec4ea0e01af7ab46165f90ea0ce86b9eec4f6eb28d638879737b19e8b8c1d4693804539fd0a3aa4cdea549069b9ad596b2b9ddff9b7153fddd2ff16d"
+            b2sum = "fbc9f2e9bdadae804901ff63bbf6ba7d98ce95e98ea37e9d3f5de1fc0fbefdf0714c0d75a6f05aad4c45f85aa4cc27dad1d9b1c817c93c96e8c60f62659d82bb"
         )
 
         # unpack archive and move files to the correct location
@@ -188,7 +188,7 @@ def pacstrap_base(chroot_fs):
 
 # install user-defined packages
 def pacstrap_pkg(chroot_fs, packages, tmp):
-    if which("pacstrap"):
+    if which("pacstrap") and which("pacman"):
         sudo(["pacstrap", "-c", chroot_fs] + packages)
         chroot(chroot_fs, ["pacman", "--sync", "--refresh", "--refresh", "--sysupgrade", "--sysupgrade", "--noconfirm"])
     else:
