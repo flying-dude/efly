@@ -67,11 +67,16 @@ cleanup_working_dir() {
 }
 
 copy_ovmf_vars() {
-    if [[ ! -f '/usr/share/edk2-ovmf/x64/OVMF_VARS.fd' ]]; then
-        printf 'ERROR: %s\n' "OVMF_VARS.fd not found. Install edk2-ovmf."
+    if [[ -f '/usr/share/edk2-ovmf/x64/OVMF_VARS.fd' ]]
+    then # arch
+        cp -av -- '/usr/share/edk2-ovmf/x64/OVMF_VARS.fd' "${working_dir}/"
+    elif [[ -f '/usr/share/OVMF/OVMF_VARS.fd' ]]
+    then # debian
+        cp -av -- '/usr/share/OVMF/OVMF_VARS.fd' "${working_dir}/"
+    else
+        printf 'ERROR: %s\n' "OVMF_VARS.fd not found. Install edk2-ovmf (--arch) or ovmf (--debian)."
         exit 1
     fi
-    cp -av -- '/usr/share/edk2-ovmf/x64/OVMF_VARS.fd' "${working_dir}/"
 }
 
 check_image() {
@@ -89,9 +94,27 @@ run_image() {
         copy_ovmf_vars
         if [[ "${secure_boot}" == 'on' ]]; then
             printf '%s\n' 'Using Secure Boot'
-            local ovmf_code='/usr/share/edk2-ovmf/x64/OVMF_CODE.secboot.fd'
+            if [[ -f '/usr/share/edk2-ovmf/x64/OVMF_CODE.secboot.fd' ]]
+            then # arch
+                local ovmf_code='/usr/share/edk2-ovmf/x64/OVMF_CODE.secboot.fd'
+            elif [[ -f '/usr/share/OVMF/OVMF_CODE.secboot.fd' ]]
+            then # debian
+                local ovmf_code='/usr/share/OVMF/OVMF_CODE.secboot.fd'
+            else
+                printf 'ERROR: %s\n' "OVMF_CODE.fd not found. Install edk2-ovmf (--arch) or ovmf (--debian)."
+                exit 1
+            fi
         else
-            local ovmf_code='/usr/share/edk2-ovmf/x64/OVMF_CODE.fd'
+            if [[ -f '/usr/share/edk2-ovmf/x64/OVMF_CODE.fd' ]]
+            then # arch
+                local ovmf_code='/usr/share/edk2-ovmf/x64/OVMF_CODE.fd'
+            elif [[ -f '/usr/share/OVMF/OVMF_CODE.fd' ]]
+            then # debian
+                local ovmf_code='/usr/share/OVMF/OVMF_CODE.fd'
+            else
+                printf 'ERROR: %s\n' "OVMF_CODE.fd not found. Install edk2-ovmf (--arch) or ovmf (--debian)."
+                exit 1
+            fi
         fi
         qemu_options+=(
             '-drive' "if=pflash,format=raw,unit=0,file=${ovmf_code},read-only=on"
