@@ -1,6 +1,7 @@
 import os, subprocess, atexit, sys, re, math, pathlib
 from pathlib import Path
 import Reflector as reflector
+import distro
 
 __all__ = [
     "version", "log", "info", "error", "parse_size", "r", "sudo", "chroot", "get", "du", "colored_output",
@@ -168,7 +169,7 @@ def hash_download(url: str, dest: pathlib.Path, b2sum: str=None):
 
 # only install the base system
 def pacstrap_base(chroot_fs):
-    if which("pacstrap") and which("pacman"):
+    if distro.id() == "arch":
         sudo(["pacstrap", "-c", chroot_fs])
     else:
         # download bootstrap tarball
@@ -188,7 +189,7 @@ def pacstrap_base(chroot_fs):
 
 # install user-defined packages
 def pacstrap_pkg(chroot_fs, packages, tmp):
-    if which("pacstrap") and which("pacman"):
+    if distro.id() == "arch":
         sudo(["pacstrap", "-c", chroot_fs] + packages)
         chroot(chroot_fs, ["pacman", "--sync", "--refresh", "--refresh", "--sysupgrade", "--sysupgrade", "--noconfirm"])
     else:

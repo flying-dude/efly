@@ -283,7 +283,7 @@ boot = chroot_fs / "boot"
 sudo(["mount", f"{loop}p1", boot]); atexit.register(sudo, ["umount", boot])
 
 # initialize pacman keyring when building from bootstrap tarball
-if not which("pacstrap"):
+if not distro.id() == "arch":
     chroot(chroot_fs, ["pacman-key", "--init"])
     chroot(chroot_fs, ["pacman-key", "--populate"])
 
