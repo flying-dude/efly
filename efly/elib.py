@@ -1,7 +1,7 @@
 import os, subprocess, atexit, sys, re, math, pathlib
 from pathlib import Path
 import Reflector as reflector
-import distro
+import distro, platformdirs
 
 __all__ = [
     "version", "log", "info", "error", "parse_size", "r", "sudo", "chroot", "get", "du", "colored_output",
@@ -167,43 +167,58 @@ def hash_download(url: str, dest: pathlib.Path, b2sum: str=None):
             else:
                 info("checksum: OK")
 
+cache_dir = pathlib.Path(platformdirs.user_cache_dir("efly")) / "dd"
+boot_version = "2024.05.01"
+bootstrap_dir = cache_dir / f"archlinux-bootstrap-{boot_version}" / "root.x86_64"
+
 # only install the base system
-def pacstrap_base(chroot_fs):
+def pacstrap_base(chroot_fs, tmp):
     if distro.id() == "arch":
         sudo(["pacstrap", "-c", chroot_fs])
     else:
         # download bootstrap tarball
-        import platformdirs
-        version = "2024.05.01"
-        dest = pathlib.Path(platformdirs.user_cache_dir("efly")) / "dd" / f"archlinux-bootstrap-{version}-x86_64.tar.zst"
+        dest = cache_dir / f"archlinux-bootstrap-{boot_version}-x86_64.tar.zst"
         hash_download(
-            url = f"https://ftp.snt.utwente.nl/pub/os/linux/archlinux/iso/{version}/archlinux-bootstrap-{version}-x86_64.tar.zst",
+            url = f"https://ftp.snt.utwente.nl/pub/os/linux/archlinux/iso/{boot_version}/archlinux-bootstrap-{boot_version}-x86_64.tar.zst",
             dest = dest,
             b2sum = "fbc9f2e9bdadae804901ff63bbf6ba7d98ce95e98ea37e9d3f5de1fc0fbefdf0714c0d75a6f05aad4c45f85aa4cc27dad1d9b1c817c93c96e8c60f62659d82bb"
         )
 
-        # unpack archive and move files to the correct location
-        sudo(["tar", "-C", chroot_fs, "--numeric-owner", "--xattrs", "--xattrs-include='*'", "-xpf", dest])
-        for f in (chroot_fs / 'root.x86_64').iterdir():
-            sudo(["mv", f.absolute().as_posix(), chroot_fs])
-        sudo(["rmdir", chroot_fs / 'root.x86_64'])
+        # unpack the archive
+        if not bootstrap_dir.exists():
+            # bootstrap an arch system inside .cache folder
+            os.mkdir(bootstrap_dir.parent)
+            sudo(["tar", "-C", bootstrap_dir.parent, "--numeric-owner", "--xattrs", "--xattrs-include='*'", "-xpf", dest])
+
+            # obtain pacman mirror list
+            mirrorlist = reflector.get_mirrors(latest=10, sort="rate")
+            print(mirrorlist)
+            with open(cache_dir / "mirrorlist", 'w', encoding='utf-8') as handle:
+                handle.write(mirrorlist)
+
+            # move mirror list to the correct location
+            sudo(["mv", cache_dir / "mirrorlist", bootstrap_dir / "etc" / "pacman.d"])
+            sudo(["chown", "root:root", bootstrap_dir / "etc" / "pacman.d" / "mirrorlist"])
+
+            # init pacman keyring and update packages
+            sudo(["systemd-nspawn", "-qD", bootstrap_dir, "pacman-key", "--init"])
+            sudo(["systemd-nspawn", "-qD", bootstrap_dir, "pacman-key", "--populate"])
+            sudo(["systemd-nspawn", "-qD", bootstrap_dir, "pacman", "--sync", "--refresh", "--refresh", "--sysupgrade", "--sysupgrade", "--noconfirm"])
+
+        # bind-mount image partitions into bootstrapped arch
+        sudo(["mkdir", "--parents", bootstrap_dir / tmp.name])
+        atexit.register(sudo, ["rmdir", bootstrap_dir / tmp.name])
+        sudo(["mount", "--bind", chroot_fs, bootstrap_dir / tmp.name])
+        atexit.register(sudo, ["umount", "--lazy", bootstrap_dir / tmp.name])
+
+        # finally run pacstrap to init arch inside the image
+        sudo(["systemd-nspawn", "-qD", bootstrap_dir, "pacstrap", "-c", tmp.name])
 
 # install user-defined packages
 def pacstrap_pkg(chroot_fs, packages, tmp):
     if distro.id() == "arch":
         sudo(["pacstrap", "-c", chroot_fs] + packages)
-        chroot(chroot_fs, ["pacman", "--sync", "--refresh", "--refresh", "--sysupgrade", "--sysupgrade", "--noconfirm"])
     else:
-        # obtain mirror list
-        mirrorlist = reflector.get_mirrors(latest=5, sort="rate")
-        print(mirrorlist)
-        with open(tmp / "mirrorlist", 'w', encoding='utf-8') as handle:
-            handle.write(mirrorlist)
-
-        # move mirror list to the correct location
-        sudo(["mkdir", "-p", chroot_fs / "etc" / "pacman.d"])
-        sudo(["mv", tmp / "mirrorlist", chroot_fs / "etc" / "pacman.d"])
-        sudo(["chown", "root:root", chroot_fs / "etc" / "pacman.d" / "mirrorlist"])
-
-        # finally install requested packages
-        chroot(chroot_fs, ["pacman", "--sync", "--refresh", "--refresh", "--sysupgrade", "--sysupgrade", "--noconfirm"] + packages)
+        bootstrap_dir = cache_dir / f"archlinux-bootstrap-{boot_version}" / "root.x86_64"
+        sudo(["systemd-nspawn", "-qD", bootstrap_dir, "pacstrap", "-c", tmp.name] + packages)
+    chroot(chroot_fs, ["pacman", "--sync", "--refresh", "--refresh", "--sysupgrade", "--sysupgrade", "--noconfirm"])

@@ -263,7 +263,7 @@ sudo(["mkfs.ext4", "-F", f"{loop}p2"])
 sudo(["mount", f"{loop}p2", chroot_fs]); atexit.register(sudo, ["umount", "--lazy", chroot_fs])
 
 # install base system
-pacstrap_base(chroot_fs)
+pacstrap_base(chroot_fs, tmp)
 
 # copy extra files for efly-dd
 sudo(["cp", "--archive", "--no-target-directory", data_dir / "extra" / "dd", chroot_fs])
@@ -281,11 +281,6 @@ sudo(["chown", "--recursive", "root:root", chroot_fs])
 # mount boot partition
 boot = chroot_fs / "boot"
 sudo(["mount", f"{loop}p1", boot]); atexit.register(sudo, ["umount", boot])
-
-# initialize pacman keyring when building from bootstrap tarball
-if not distro.id() == "arch":
-    chroot(chroot_fs, ["pacman-key", "--init"])
-    chroot(chroot_fs, ["pacman-key", "--populate"])
 
 # run pacstrap for user-defined packages
 pacstrap_pkg(chroot_fs, packages, tmp)
