@@ -174,9 +174,10 @@ def pacstrap_base(chroot_fs):
     else:
         # download bootstrap tarball
         import platformdirs
-        dest = pathlib.Path(platformdirs.user_cache_dir("efly")) / "dd" / "archlinux-bootstrap-2024.05.01-x86_64.tar.zst"
+        version = "2024.05.01"
+        dest = pathlib.Path(platformdirs.user_cache_dir("efly")) / "dd" / f"archlinux-bootstrap-{version}-x86_64.tar.zst"
         hash_download(
-            url = "https://ftp.snt.utwente.nl/pub/os/linux/archlinux/iso/2024.05.01/archlinux-bootstrap-2024.05.01-x86_64.tar.zst",
+            url = f"https://ftp.snt.utwente.nl/pub/os/linux/archlinux/iso/{version}/archlinux-bootstrap-{version}-x86_64.tar.zst",
             dest = dest,
             b2sum = "fbc9f2e9bdadae804901ff63bbf6ba7d98ce95e98ea37e9d3f5de1fc0fbefdf0714c0d75a6f05aad4c45f85aa4cc27dad1d9b1c817c93c96e8c60f62659d82bb"
         )
