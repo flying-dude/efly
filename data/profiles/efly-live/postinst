@@ -23,7 +23,6 @@ chown --recursive efly:efly /home/efly
 
 # enable systemd services
 systemctl enable NetworkManager.service
-systemctl enable reflector.service
 systemctl enable bluetooth.service
 systemctl enable lightdm.service
 
