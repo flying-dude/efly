@@ -73,6 +73,9 @@ copy_ovmf_vars() {
     elif [[ -f '/usr/share/OVMF/OVMF_VARS.fd' ]]
     then # debian
         cp -av -- '/usr/share/OVMF/OVMF_VARS.fd' "${working_dir}/"
+    elif [[ -f '/usr/share/OVMF/OVMF_VARS_4M.fd' ]]
+    then # debian sid
+        cp -av -- '/usr/share/OVMF/OVMF_VARS_4M.fd' "${working_dir}/OVMF_VARS.fd"
     else
         printf 'ERROR: %s\n' "OVMF_VARS.fd not found. Install edk2-ovmf (--arch) or ovmf (--debian)."
         exit 1
@@ -100,6 +103,9 @@ run_image() {
             elif [[ -f '/usr/share/OVMF/OVMF_CODE.secboot.fd' ]]
             then # debian
                 local ovmf_code='/usr/share/OVMF/OVMF_CODE.secboot.fd'
+            elif [[ -f '/usr/share/OVMF/OVMF_CODE_4M.secboot.fd' ]]
+            then # debian sid
+                local ovmf_code='/usr/share/OVMF/OVMF_CODE_4M.secboot.fd'
             else
                 printf 'ERROR: %s\n' "OVMF_CODE.fd not found. Install edk2-ovmf (--arch) or ovmf (--debian)."
                 exit 1
@@ -111,6 +117,9 @@ run_image() {
             elif [[ -f '/usr/share/OVMF/OVMF_CODE.fd' ]]
             then # debian
                 local ovmf_code='/usr/share/OVMF/OVMF_CODE.fd'
+            elif [[ -f '/usr/share/OVMF/OVMF_CODE_4M.fd' ]]
+            then # debian sid
+                local ovmf_code='/usr/share/OVMF/OVMF_CODE_4M.fd'
             else
                 printf 'ERROR: %s\n' "OVMF_CODE.fd not found. Install edk2-ovmf (--arch) or ovmf (--debian)."
                 exit 1
