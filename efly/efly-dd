@@ -58,7 +58,8 @@ from elib import *
 
 script_dir = Path(os.path.dirname(os.path.realpath(__file__)))
 data_dir = script_dir / "data" # TODO this should be a global variable
-profile_dir = data_dir / "profiles" / "xfce" # TODO this should also be a global variable. and separate from data_dir.
+profiles_dir = data_dir / "profiles"
+selected_profile = profiles_dir / "xfce" # TODO this should also be a global variable. and separate from data_dir.
 
 # parse cli
 block_device = None
@@ -121,7 +122,7 @@ while args:
             error('missing argument for cli flag "--profile"')
             exit(1)
         else:
-            profile_dir = Path(args[1])
+            selected_profile = profiles_dir / args[1]
             args = args[2:]
             continue
 
@@ -150,9 +151,6 @@ while args:
     info(f"installing on block device: {block_device}")
 
     args = args[1:]
-    if args:
-        error(f'excess arguments: {args}')
-        exit(1)
 
 # list of required shell commands together with their corresponding packages
 cmd2pkg = [
@@ -180,12 +178,12 @@ if missing_pkg:
     exit(1)
 
 # check if config dir is present
-if not profile_dir.is_dir():
-    error(f'profile folder not present: "{profile_dir}"')
+if not selected_profile.is_dir():
+    error(f'profile folder not present: "{selected_profile}"')
     exit(1)
 
 # check for presence of package list
-package_txt = profile_dir / "packages.txt"
+package_txt = selected_profile / "packages.txt"
 if not package_txt.is_file():
     error(f'package file not found: "{packages_txt}"')
     exit(1)
@@ -271,7 +269,7 @@ sudo(["sed", "--in-place", f"s/XXX__EFLY_ROOT_UUID__XXX/{root_uuid}/g", chroot_f
 sudo(["sed", "--in-place", f"s/XXX__EFLY_EFI_UUID__XXX/{boot_uuid}/g", chroot_fs / "etc" / "fstab"])
 
 # copy user-defined filesystem data
-extra_files = profile_dir / "extra"
+extra_files = selected_profile / "extra"
 if extra_files.is_dir():
     sudo(["cp", "--archive", "--no-target-directory", extra_files, chroot_fs])
 
@@ -310,7 +308,7 @@ sudo(["sed", "--in-place", f"s/XXX__EFLY_ROOT_UUID__XXX/{root_uuid}/g", boot / "
 sudo(["sed", "--in-place", f"s/XXX__EFLY_ROOTFSTYPE__XXX/ext4/g", boot / "grub" / "grub.cfg"])
 
 # execute image customization script, if it exists
-postinst_script = profile_dir / "postinst"
+postinst_script = selected_profile / "postinst"
 if postinst_script.is_file():
     # copy files
     sudo(["cp", postinst_script, chroot_fs])

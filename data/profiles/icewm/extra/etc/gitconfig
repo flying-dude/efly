@@ -1,0 +1,13 @@
+[user]
+	email = you@example.com
+	name = Your Name
+[core]
+	editor = nano
+[init]
+	defaultBranch = main
+[diff]
+	tool = meld
+[merge]
+	tool = meld
+[mergetool]
+        keepBackup = false

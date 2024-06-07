@@ -1,0 +1,34 @@
+#!/bin/bash
+
+set -ex
+
+# have user root use fish as login shell
+usermod --shell /usr/bin/fish root
+
+# create user "efly" with groups suggested in arch wiki:
+# https://wiki.archlinux.org/title/users_and_groups#User_groups
+# note: not creating home. it already exists in "img/extra/" and "/etc/skel" has already been copied.
+useradd --no-create-home --groups adm,ftp,games,http,log,rfkill,sys,systemd-journal,uucp,wheel efly
+
+# https://wiki.archlinux.org/title/LightDM#Enabling_autologin
+groupadd --system autologin
+gpasswd --add efly autologin
+
+# https://wiki.archlinux.org/title/LightDM#Enabling_interactive_passwordless_login
+groupadd --system nopasswdlogin
+gpasswd --add efly nopasswdlogin
+
+# make sure efly home dir is actually owned by user efly
+chown --recursive efly:efly /home/efly
+
+# enable systemd services
+systemctl enable NetworkManager.service
+#systemctl enable bluetooth.service
+systemctl enable lightdm.service
+
+# TODO why is cache folder owned by root?
+rm -rf /home/efly/.cache
+
+# delete unneeded files to reduce image size
+rm --recursive /var/cache/pacman/
+

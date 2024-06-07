@@ -1,0 +1,6 @@
+AuthorizedKeysFile	.ssh/authorized_keys
+KbdInteractiveAuthentication no
+UsePAM yes
+X11Forwarding yes
+PrintMotd no # pam does that
+Subsystem	sftp	/usr/lib/ssh/sftp-server

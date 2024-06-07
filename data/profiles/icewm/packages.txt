@@ -2,78 +2,83 @@
 xorg-server
 xorg-xinit
 
-xfce4
-xfce4-goodies
+#xfce4
+#xfce4-goodies
 
 lightdm
 lightdm-gtk-greeter
 
+icewm
+xterm
+
 # gvfs this needs to be installed, so that removable devices
 # are shown in xfce and thunar file manager
-gvfs
-gvfs-mtp
+#gvfs
+#gvfs-mtp
 
 # thunar file manager will show "eject" option for removable devices,
 # if the following package is installed. xfce desktop will never provide
 # that option. "eject" means it will unmount and poweroff the removable device,
 # making it safe to remove.
 # see also: https://forum.manjaro.org/t/eject-external-hard-drive-option-gone/61895
-gnome-disk-utility
+#gnome-disk-utility
 
 # audio stuff
-pulseaudio
-pulseaudio-alsa
-pavucontrol
+#pulseaudio
+#pulseaudio-alsa
+#pavucontrol
 
 # the shell that we use
+#nushell
+#noto-fonts
 fish
 
 # cli editors
 nano
-gvim
-emacs
-micro
+#gvim
+#emacs
+#micro
 
 # git stuff
-git
-meld
-tk
+#git
+#meld
+#tk
 
 # misc cli applications
-bat
-htop
-ncdu
-python-pipx
-restic
-ripgrep
-unzip
-wget
+#bat
+#htop
+#ncdu
+#python-pipx
+#restic
+#ripgrep
+#unzip
+#wget
 
 # misc gui applications
-firefox
-tilda
-geany
-gparted
-tigervnc
-xterm
+#firefox
+#tilda
+#geany
+#gparted
+#tigervnc
+#xterm
 
 # wireless config: https://wiki.archlinux.org/title/NetworkManager
 networkmanager
 network-manager-applet
 
 # bluetooth
-bluez
-bluez-utils
-blueman
+#bluez
+#bluez-utils
+#blueman
 
 # obtain the "ifconfig" command
-net-tools
+#net-tools
 
 # contains "growpart" util for resizing partitions
-cloud-guest-utils
+#cloud-guest-utils
 
 # for using PKGBUILDs
-base-devel
+#base-devel
 
 ########################################
 ###
@@ -83,109 +88,109 @@ base-devel
 ###
 ########################################
 
-alsa-utils
-arch-install-scripts
-archinstall
-b43-fwcutter
+#alsa-utils
+#arch-install-scripts
+#archinstall
+#b43-fwcutter
 base
 bind
-btrfs-progs
-clonezilla
-cloud-init
-cryptsetup
-darkhttpd
-ddrescue
+#btrfs-progs
+#clonezilla
+#cloud-init
+#cryptsetup
+#darkhttpd
+#ddrescue
 dhclient
 dhcpcd
 diffutils
 dmidecode
 dmraid
 dnsmasq
-dosfstools
+#dosfstools
 e2fsprogs
 edk2-shell
-efibootmgr
-espeakup
+#efibootmgr
+#espeakup
 ethtool
-exfatprogs
-f2fs-tools
-fatresize
-fsarchiver
-gnu-netcat
+#exfatprogs
+#f2fs-tools
+#fatresize
+#fsarchiver
+#gnu-netcat
 gpart
 gpm
-gptfdisk
+#gptfdisk
 grub
 hdparm
-hyperv
-irssi
-iw
-iwd
-jfsutils
-kitty-terminfo
-less
-lftp
-libfido2
-libusb-compat
-lsscsi
-lvm2
-lynx
-man-db
-man-pages
-mc
-mdadm
-memtest86+
-modemmanager
-mtools
-nbd
-ndisc6
-nfs-utils
-nilfs-utils
-nmap
-ntfs-3g
-nvme-cli
-open-iscsi
-open-vm-tools
-openconnect
-openssh
-openvpn
-partclone
-parted
-partimage
-pcsclite
-ppp
-pptpclient
-pv
-qemu-guest-agent
-refind
-reiserfsprogs
-rp-pppoe
-rsync
-rxvt-unicode-terminfo
-screen
-sdparm
-sg3_utils
-smartmontools
-sof-firmware
+#hyperv
+#irssi
+#iw
+#iwd
+#jfsutils
+#kitty-terminfo
+#less
+#lftp
+#libfido2
+#libusb-compat
+#lsscsi
+#lvm2
+#lynx
+#man-db
+#man-pages
+#mc
+#mdadm
+#memtest86+
+#modemmanager
+#mtools
+#nbd
+#ndisc6
+#nfs-utils
+#nilfs-utils
+#nmap
+#ntfs-3g
+#nvme-cli
+#open-iscsi
+#open-vm-tools
+#openconnect
+#openssh
+#openvpn
+#partclone
+#parted
+#partimage
+#pcsclite
+#ppp
+#pptpclient
+#pv
+#qemu-guest-agent
+#refind
+#reiserfsprogs
+#rp-pppoe
+#rsync
+#rxvt-unicode-terminfo
+#screen
+#sdparm
+#sg3_utils
+#smartmontools
+#sof-firmware
 squashfs-tools
 sudo
 systemd-resolvconf
-tcpdump
-terminus-font
-testdisk
-tmux
-tpm2-tss
-udftools
-usb_modeswitch
-usbmuxd
-usbutils
-vpnc
-wireless-regdb
-wireless_tools
-wpa_supplicant
-wvdial
-xfsprogs
-xl2tpd
+#tcpdump
+#terminus-font
+#testdisk
+#tmux
+#tpm2-tss
+#udftools
+#usb_modeswitch
+#usbmuxd
+#usbutils
+#vpnc
+#wireless-regdb
+#wireless_tools
+#wpa_supplicant
+#wvdial
+#xfsprogs
+#xl2tpd
 
 ########################################
 ###
@@ -197,16 +202,17 @@ xl2tpd
 ########################################
 
 linux
-linux-atm
-linux-firmware
-linux-firmware-marvell
+#linux-atm
+#linux-firmware
+#linux-firmware-marvell
 
 mkinitcpio
-mkinitcpio-archiso
-mkinitcpio-nfs-utils
+#mkinitcpio-archiso
+#mkinitcpio-nfs-utils
 
 amd-ucode
 intel-ucode
-syslinux # BIOS booting
-broadcom-wl
-virtualbox-guest-utils-nox
+#syslinux # BIOS booting
+#broadcom-wl
+#virtualbox-guest-utils-nox
+
