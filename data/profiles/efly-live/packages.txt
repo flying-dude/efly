@@ -50,6 +50,7 @@ unzip
 wget
 
 # misc gui applications
+firefox
 tilda
 geany
 gparted
